@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body bgcolor="#b6b6d6" onload="onload_init()">
+
+<h3>Events</h3>
+
+<div>
+    <label id="label#ConnectionState"; width: 100px; float:left; display:inline-block><br>
+</div> 
+
+<table id="table#viewDialog"  class="gridtable">
+   <thead>
+   <th>Name</th>
+   <th>Quality</th>
+   <th>Value</th>
+   <!-- <th>Handle</th> -->
+   <th>Timestamp</th>
+</table>
+
+
+<script>
+ 
+function unix_timestamp64(t)
+   {
+   //var unixTimeToDate = new Date(t * 1000);
+   var dt = new Date(t/1e6);
+   //var date = dt.toDateString();
+   var date = "0" + dt.getDate();
+   var month = "0" + (dt.getMonth() + 1);
+   var year = dt.getFullYear();
+   var hr = "0" + dt.getHours();
+   var m = "0" + dt.getMinutes();
+   var ms = "00" + dt.getMilliseconds();
+   var us = t.substr(-6);
+   var s = "0" + dt.getSeconds();
+  
+   return date.substr(-2) + '.' + month.substr(-2) + '.' + year + ',  ' + hr.substr(-2) + ':' + m.substr(-2) + ':' + s.substr(-2) + ':' + ms.substr(-3); //Math.round(s*1e6)/1e6;
+   }
+
+function AddViewDialog(_topic,_value,_handle,_source, _quality ,_type, _event_nr, _timestamp)
+   {
+   var table = document.getElementById("table#viewDialog");
+   var dialogs = table.getElementsByTagName("tr"); 
+   var len = dialogs.length;
+   var f_id_found = 0;
+   for (var i=0; i<len; i++) {
+   if (dialogs[i].id != "undefined"){
+         if ( dialogs[i].id == "#row" + _event_nr)
+            {
+            f_id_found=1;
+            } 
+         }
+      }
+   if (f_id_found==0)
+      {  /* add new div */
+      var row = table.insertRow();
+      row.id = "#row" + _event_nr;
+      var cell1 = row.insertCell(0);
+      var cell2 = row.insertCell(1);
+      var cell3 = row.insertCell(2);
+      // cell4 = row.insertCell(3);
+      var cell4 = row.insertCell(3);
+      cell1.id = "topic#" + _event_nr;
+      cell2.id = "quality#" + _event_nr;
+      cell3.id = "value#" + _event_nr;
+      //cell4.id = "handle#" + _event_nr;
+      cell4.id = "timestamp#" + _event_nr;
+      }
+   document.getElementById("topic#" + _event_nr).innerHTML = _topic;
+   document.getElementById("quality#" + _event_nr).innerHTML = _quality;
+   document.getElementById("value#" + _event_nr).innerHTML = _value;
+   //document.getElementById("handle#" + _event_nr).innerHTML = _handle;
+   document.getElementById("timestamp#" + _event_nr).innerHTML = unix_timestamp64(_timestamp);
+   }
+   
+function SynchronizeData() {
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+   if ((this.readyState == 4) && (this.status == 200)) {
+      parser = new DOMParser();
+      xmlDoc = parser.parseFromString(this.responseText,"text/xml");
+      var list = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("EdgeDataValue"));
+      var connected = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("Status"))[0].childNodes[0].nodeValue;
+      list.forEach(function(entry, i) {
+      console.log(entry);
+         var _handle = entry.getElementsByTagName("Handle")[0].childNodes[0].nodeValue;
+         var _topic = entry.getElementsByTagName("Topic")[0].childNodes[0].nodeValue;
+         var _value = entry.getElementsByTagName("Value")[0].childNodes[0].nodeValue;
+         var _source = entry.getElementsByTagName("Source")[0].childNodes[0].nodeValue;
+         var _quality = "";
+         if (entry.getElementsByTagName("Quality")[0].childNodes[0] != null) {
+            _quality = entry.getElementsByTagName("Quality")[0].childNodes[0].nodeValue;
+         }
+         var _type = entry.getElementsByTagName("Type")[0].childNodes[0].nodeValue;
+         var _timestamp = entry.getElementsByTagName("Timestamp")[0].childNodes[0].nodeValue;
+         var _event_nr = i;
+         if (_source=="READ")
+            {
+            AddViewDialog(_topic,_value,_handle,_source, _quality, _type, _event_nr, _timestamp);
+            }
+         });
+         if (connected == 1) {
+               document.getElementById("label#ConnectionState").innerHTML = "Connected";
+               document.getElementById("label#ConnectionState").style.backgroundColor = "green";
+            }
+         else {
+            document.getElementById("label#ConnectionState").innerHTML = "EdgeDataApi Communication Error";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+         }
+      else {
+         if ((this.status == 200) || (this.status == 0))  {
+            /* do nothing */
+            }
+         else
+            {
+            document.getElementById("label#ConnectionState").innerHTML = "HTTP Communication Error (" + this.readyState + "/"+ this.status + ")";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+      }
+  };
+  xhttp.open("POST", "edgedata/get_events", true);
+  xhttp.send("");
+}
+
+function onload_init() {
+   SynchronizeData();
+   setInterval(SynchronizeData,1000);
+}
+</script>
+</body>
+</html>

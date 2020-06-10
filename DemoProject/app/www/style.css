@@ -1,0 +1,44 @@
+table.gridtable {
+    background-color: white
+   border-width: 1px;
+}
+table.gridtable tr {
+   border-color: #a5a5cf;
+}
+table.gridtable th {
+   padding: 3px;
+   background-color: #a5a5cf;
+   font-family: Arial,sans-serif;
+    font-weight: bold;
+    font-size: 12px
+}
+table.gridtable td {
+   padding: 3px;
+   background-color: #d9d9f1;
+   font-family: Arial,sans-serif;
+   font-weight: normal;
+   font-size: 11px
+}
+.Feld {
+    background-color:#d9d9f1;
+    font-family: Arial,sans-serif;
+    border:0px; 
+    font-weight: normal;
+    font-size: 11px
+}
+.Radio { 
+    border:0px ; 
+    font-weight: normal;
+    font-size: 11px
+}
+label {
+    font-family: Arial,sans-serif;
+    font-weight: normal;
+    font-size: 11px;
+}
+body {
+   font-family: Arial,sans-serif;
+    font-weight: normal;
+    font-size: 11px;
+   background-color: #b6b6d6;
+}

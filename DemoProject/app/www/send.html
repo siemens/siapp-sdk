@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body bgcolor="#b6b6d6" onload="onload_init()">
+   <h3>Send</h3>
+   <div>
+      <label id="label#ConnectionState"; width: 100px; float:left; display:inline-block><br>
+   </div>
+   <br>
+   <table id="table#changeDialog"  class="gridtable"></table>
+
+<script>
+quality_flags = ["NT", "OV", "OB", "SB", "T", "IV"]
+
+function AddChangeDialog(_topic,_value,_handle,_source,_type)
+   {
+   var table = document.getElementById("table#changeDialog");
+   var dialogs = table.getElementsByTagName("tr");
+   var len = dialogs.length;
+   var f_id_found = 0;
+   for (var i=0; i<len; i++) {
+        if (dialogs[i].id != "undefined"){
+         if ( dialogs[i].id == "#row" + _handle + "_" + _topic)
+            {
+            f_id_found=1;
+            }
+         }
+      }
+   if (f_id_found==0)
+      {
+      var row = table.insertRow();
+      row.id = "#row" + _handle + "_" + _topic;
+      var i = 0;
+      var col = row.insertCell(i++);
+      col.innerHTML = _topic;
+      col = row.insertCell(i++);
+      col.innerHTML = _type;
+      col = row.insertCell(i++);
+      col.innerHTML = "<input type='text' id='text#" + _handle + "_" + _topic + "'>";
+      for(var w = 0; w < quality_flags.length; w++){
+            var cell = row.insertCell(i++);
+            checked = "";
+            cell.innerHTML = '<input id="cb#' + _handle + '_' + quality_flags[w] + '" type="checkbox"' + checked  +'>';
+         }
+      var cell = row.insertCell(i++);
+      cell.innerHTML = "<button type=\"button\" onclick=\"UpdateData("+_handle+",'"+_topic+"')\">Set</button>";
+      }
+   }
+
+function UpdateData(_handle, _topic)
+   {
+   var _quality = "";
+   for(var i = 0; i < quality_flags.length; i++){
+         var cb = 'cb#' + _handle + '_' + quality_flags[i];
+         if (document.getElementById(cb).checked)
+            {
+            if (_quality == "")
+               {
+               _quality += quality_flags[i];
+               }
+            else
+               {
+               _quality += "|" + quality_flags[i];
+               }
+            }
+      }
+
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+      if ((this.readyState == 4) && (this.status == 200)) {
+
+         }
+      };
+   _value = document.getElementById("text#" + _handle + "_" + _topic).value;
+   xhttp.open("POST", "edgedata/set", true);
+   var message2send =   "<EdgeData>"+
+                           "<EdgeDataValue>" +
+                              "<Topic>"+_topic+"</Topic>" +
+                              "<Handle>"+_handle+"</Handle>" +
+                              "<Value>"+ _value + "</Value>" +
+                              "<Quality>"+ _quality +"</Quality>" +
+                              "<Timestamp>"+ 0 +"</Timestamp>" +
+                           "</EdgeDataValue>" +
+                        "</EdgeData>";
+   console.log(message2send);
+   xhttp.send(message2send);
+   }
+
+function SynchronizeData() {
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+   if ((this.readyState == 4) && (this.status == 200)) {
+      parser = new DOMParser();
+      xmlDoc = parser.parseFromString(this.responseText,"text/xml");
+      var list = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("EdgeDataValue"));
+      var connected = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("Status"))[0].childNodes[0].nodeValue;
+      list.forEach(function(entry) {
+         var _handle = entry.getElementsByTagName("Handle")[0].childNodes[0].nodeValue;
+         var _topic = entry.getElementsByTagName("Topic")[0].childNodes[0].nodeValue;
+         var _value = entry.getElementsByTagName("Value")[0].childNodes[0].nodeValue;
+         var _source = entry.getElementsByTagName("Source")[0].childNodes[0].nodeValue;
+         var _type = entry.getElementsByTagName("Type")[0].childNodes[0].nodeValue;
+         var _quality = "";
+         if (entry.getElementsByTagName("Quality")[0].childNodes[0] != null) {
+            var _quality = entry.getElementsByTagName("Quality")[0].childNodes[0].nodeValue;
+         }
+         if (_source!="READ")
+            {
+            AddChangeDialog(_topic,_value,_handle,_source,_type);
+            }
+         });
+         if (connected == 1) {
+               document.getElementById("label#ConnectionState").innerHTML = "Connected";
+               document.getElementById("label#ConnectionState").style.backgroundColor = "green";
+            }
+         else {
+            document.getElementById("label#ConnectionState").innerHTML = "EdgeDataApi Communication Error";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+         }
+      else {
+         if ((this.status == 200) || (this.status == 0))  {
+            /* do nothing */
+            }
+         else
+            {
+            document.getElementById("label#ConnectionState").innerHTML = "HTTP Communication Error (" + this.readyState + "/"+ this.status + ")";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+      }
+  };
+  xhttp.open("POST", "edgedata/get", true);
+  xhttp.send("");
+}
+function generate_table()
+   {
+   // changeDialog
+   var changeDialog = document.getElementById("table#changeDialog");
+   var head = changeDialog.insertRow(0);
+   cell = document.createElement("th");
+   cell.innerHTML = "Name";
+   head.appendChild(cell);
+   cell = document.createElement("th");
+   cell.innerHTML = "Type";
+   head.appendChild(cell);
+   cell = document.createElement("th");
+   cell.innerHTML = "Value";
+   head.appendChild(cell);
+   for(var i = 0; i < quality_flags.length; i++){
+      cell = document.createElement("th");
+      cell.innerHTML = quality_flags[i];
+      head.appendChild(cell);
+      }
+   cell = document.createElement("th");
+   cell.innerHTML = "Set";
+   head.appendChild(cell);
+   }
+
+function StartBackgroundTask()
+   {
+   SynchronizeData();
+   setInterval(SynchronizeData,1000);
+   }
+
+function onload_init()
+   {
+   generate_table();
+   StartBackgroundTask();
+   }
+</script>
+</body>
+</html>

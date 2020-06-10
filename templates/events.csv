@@ -1,0 +1,12 @@
+topic;quality;value;wait_ms
+read01;NT|T|SB;10;2000
+write01;NT|T|SB;10;100
+read01;NT|T|SB;10;2000
+write01;NT|T|SB;10;100
+read01;IV|NT|T;11;2000
+write01;IV|NT|T;11;100
+read01;T|SB;10;2000
+write01;T|SB;10;100
+read01;;10;2000
+write01;;10;100
+GOTO 2;;;

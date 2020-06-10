@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body bgcolor="#b6b6d6" onload="onload_init()">
+   <h3>Receive</h3>
+   <div>
+      <label id="label#ConnectionState"; width: 100px; float:left; display:inline-block><br>
+   </div>
+   <br>
+   <table id="table#viewDialog"  class="gridtable"></table>
+
+<script>
+function AddViewDialog(_topic,_value,_handle,_source,_type, _quality)
+   {
+   var table = document.getElementById("table#viewDialog");
+   var dialogs = table.getElementsByTagName("tr");
+   var len = dialogs.length;
+   var f_id_found = 0;
+   for (var i=0; i<len; i++) {
+   if (dialogs[i].id != "undefined"){
+         if ( dialogs[i].id == "#row" + _handle + "_" + _topic)
+            {
+            f_id_found=1;
+            }
+         }
+      }
+   if (f_id_found==0)
+      {
+      var row = table.insertRow();
+      row.id = "#row" + _handle + "_" + _topic;
+      var col = row.insertCell(0);
+      col.innerHTML = _topic;
+      col = row.insertCell(1);
+      col.innerHTML = _type;
+	  col = row.insertCell(2);
+      col.innerHTML = _value;
+      col.id = "quality#" + _handle + "_" + _topic;
+      col = row.insertCell(3);
+      col.innerHTML = _quality;
+      col.id = "text#" + _handle + "_" + _topic;
+      }
+   document.getElementById("text#" + _handle + "_" + _topic).innerHTML =_value;
+   document.getElementById("quality#" + _handle + "_" + _topic).innerHTML =_quality;
+   }
+
+function SynchronizeData() {
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function() {
+   if ((this.readyState == 4) && (this.status == 200)) {
+      parser = new DOMParser();
+      xmlDoc = parser.parseFromString(this.responseText,"text/xml");
+      var list = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("EdgeDataValue"));
+      var connected = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("Status"))[0].childNodes[0].nodeValue;
+      list.forEach(function(entry) {
+         var _handle = entry.getElementsByTagName("Handle")[0].childNodes[0].nodeValue;
+         var _topic = entry.getElementsByTagName("Topic")[0].childNodes[0].nodeValue;
+         var _value = entry.getElementsByTagName("Value")[0].childNodes[0].nodeValue;
+         var _source = entry.getElementsByTagName("Source")[0].childNodes[0].nodeValue;
+         var _type = entry.getElementsByTagName("Type")[0].childNodes[0].nodeValue;
+         var _quality = "";
+         if (entry.getElementsByTagName("Quality")[0].childNodes[0] != null) {
+            _quality = entry.getElementsByTagName("Quality")[0].childNodes[0].nodeValue;
+         }
+         if (_source=="READ")
+            {
+            AddViewDialog(_topic,_value,_handle,_source,_type, _quality);
+            }
+         });
+         if (connected == 1) {
+            document.getElementById("label#ConnectionState").innerHTML = "Connected";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "green";
+            }
+         else {
+            document.getElementById("label#ConnectionState").innerHTML = "EdgeDataApi Communication Error";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+         }
+      else {
+         if ((this.status == 200) || (this.status == 0))  {
+            /* do nothing */
+            }
+         else
+            {
+            document.getElementById("label#ConnectionState").innerHTML = "HTTP Communication Error (" + this.readyState + "/"+ this.status + ")";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+      }
+  };
+  xhttp.open("POST", "edgedata/get", true);
+  xhttp.send("");
+}
+function generate_table()
+   {
+   // veiwDialog
+   var viewDialog = document.getElementById("table#viewDialog");
+   var head = viewDialog.insertRow(0);
+   cell = document.createElement("th");
+   cell.innerHTML = "Name";
+   head.appendChild(cell);
+   cell = document.createElement("th");
+   cell.innerHTML = "Type";
+   head.appendChild(cell);
+   cell = document.createElement("th");
+   cell.innerHTML = "Quality";
+   head.appendChild(cell);
+   cell = document.createElement("th");
+   cell.innerHTML = "Value";
+   head.appendChild(cell);
+   }
+
+function StartBackgroundTask()
+   {
+   SynchronizeData();
+   setInterval(SynchronizeData,1000);
+   }
+
+function onload_init()
+   {
+   generate_table();
+   StartBackgroundTask();
+   }
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+SPDXVersion: SPDX-2.1
+DataLicense: CC0-1.0
+Creator: Organization: Siemens AG
+PackageName: app-sdk
+PackageHomePage: https://github.com/siemens/siapp-sdk
+PackageLicenseDeclared: MIT
+PackageLicenseDeclared: Apache-2.0

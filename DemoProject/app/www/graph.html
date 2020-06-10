@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body  bgcolor="#b6b6d6" onload="onload_init()">
+   <h3 display: inline;>Graph</h3>
+   <div>
+      </label><label id="label#ConnectionState"; width: 100px; float:left; display:inline-block><br>
+   </div>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
+   <br>
+   <br>
+   <div style="width:90%;">
+      <canvas id="canvas"></canvas>
+   </div>
+   <div id="div#changeDialog">
+
+   </div>
+<script>
+      var config = {
+         type: 'line',
+         showLine: true,
+         data: {
+            datasets: []
+         },
+         options: {
+               responsive: true,
+               title: {
+               display: true,
+               text: 'EdgeData'
+            },
+            hover: {
+               mode: 'nearest',
+               intersect: true
+            },
+            scales: {
+               xAxes: [{
+                  display: true,
+                  time: {
+                     uint: 'second',
+                     display: true
+                     },
+                  type: 'time',
+                  scaleLabel: {
+                     display: true,
+                     labelString: 'Time'
+                  }
+               }],
+                  yAxes: [{
+                     display: true,
+                     scaleLabel: {
+                     display: true,
+                     labelString: 'Value'
+                  }
+               }]
+            }
+         }
+      };
+
+function AddDataToPlot(_topic, _new_value, _date)
+   {
+   var f_topic_found=0;
+   config.data.datasets.forEach(function(dataset)
+      {
+      if (dataset.label == _topic)
+         f_topic_found=1;
+      });
+
+   if (f_topic_found==0)
+      {
+      var new_color = "rgb("+(Math.floor(Math.random() * 256))+", "+(Math.floor(Math.random() * 256))+", "+(Math.floor(Math.random() * 256))+")" ;
+      var newDataset = {
+      label: _topic,
+      borderColor: new_color,
+      backgroundColor: new_color,
+      data: [],
+      type: 'line',
+      pointRadius: 0,
+      fill: false,
+      lineTension: 0,
+      borderWidth: 2
+      };
+      config.data.datasets.push(newDataset);
+      }
+   config.data.datasets.forEach(function(dataset) {
+      if (dataset.label == _topic)
+         dataset.data.push({x: _date,y: _new_value});
+      });
+   config.data.datasets.forEach(function(dataset) {
+      if (dataset.data.length>20)
+         {
+         dataset.data.shift();
+         }
+      });
+   console.log(window.myLine.options.scales.xAxes[0].time.min);
+	window.myLine.update();
+   }
+
+var first = true;
+
+function initPlot(topic)
+   {
+   for (i = 10; i > 0; i--) {
+      date = new Date();
+      date.setSeconds(date.getSeconds() -  i);
+      AddDataToPlot(topic, 0, date);
+   }
+}
+
+function SynchronizeData() {
+   var xhttp = new XMLHttpRequest();
+   xhttp.onreadystatechange = function()
+      {
+      if ((this.readyState == 4) && (this.status == 200))
+         {
+         parser = new DOMParser();
+         xmlDoc = parser.parseFromString(this.responseText,"text/xml");
+         var list = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("EdgeDataValue"));
+         var connected = Array.prototype.slice.call(xmlDoc.getElementsByTagName("EdgeData")[0].getElementsByTagName("Status"))[0].childNodes[0].nodeValue;
+         list.forEach(function(entry) {
+            var _handle = entry.getElementsByTagName("Handle")[0].childNodes[0].nodeValue;
+            var _topic = entry.getElementsByTagName("Topic")[0].childNodes[0].nodeValue;
+            var _value = entry.getElementsByTagName("Value")[0].childNodes[0].nodeValue;
+            var _source = entry.getElementsByTagName("Source")[0].childNodes[0].nodeValue;
+            var _quality = "";
+            if (entry.getElementsByTagName("Quality")[0].childNodes[0] != null) {
+               _quality = entry.getElementsByTagName("Quality")[0].childNodes[0].nodeValue;
+            }
+            var _type = entry.getElementsByTagName("Type")[0].childNodes[0].nodeValue;
+            if (_source=="READ")
+               {
+               if (first)
+                  {
+                  initPlot(_topic);
+                  first = false;
+                  }
+               AddDataToPlot(_topic,_value, new Date());
+               }
+            });
+            if (connected == 1) {
+               document.getElementById("label#ConnectionState").innerHTML = "Connected";
+               document.getElementById("label#ConnectionState").style.backgroundColor = "green";
+            }
+            else {
+            document.getElementById("label#ConnectionState").innerHTML = "EdgeDataApi Communication Error";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+         }
+      else
+         {
+         if ((this.status == 200) || (this.status == 0))  {
+            /* do nothing */
+            }
+         else
+            {
+            document.getElementById("label#ConnectionState").innerHTML = "HTTP Communication Error (" + this.readyState + "/"+ this.status + ")";
+            document.getElementById("label#ConnectionState").style.backgroundColor = "red";
+            }
+      }
+     };
+  xhttp.open("POST", "edgedata/get", true);
+  xhttp.send("");
+}
+
+function onload_init() {
+   var ctx = document.getElementById('canvas').getContext('2d');
+   window.myLine = new Chart(ctx, config);
+   StartBackgroundTask();
+}
+
+function StartBackgroundTask() {
+   SynchronizeData();
+   setInterval(SynchronizeData,1000);
+}
+</script>
+</body>
+</html>
