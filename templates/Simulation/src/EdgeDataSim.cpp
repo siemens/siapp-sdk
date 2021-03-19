@@ -67,7 +67,7 @@ static void edgedata_print_info(const char* log_text)
 {
    struct timespec tsp;
    clock_gettime(CLOCK_MONOTONIC, &tsp);
-   printf("%ld.%.3ld-%.6ld: %s", tsp.tv_sec, tsp.tv_nsec / 1000000, tsp.tv_nsec % 1000000, log_text);
+   printf("%lld.%.3ld-%.6ld: %s", tsp.tv_sec, tsp.tv_nsec / 1000000, tsp.tv_nsec % 1000000, log_text);
 }
 
 /*!

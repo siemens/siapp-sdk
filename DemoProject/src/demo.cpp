@@ -25,7 +25,7 @@
 #define XML_STATUS_CONNECTED    "1"
 #define XML_STATUS_DISCONNECTED "0"
 
-#define XML_OPEN "<EdgeData>"
+#define XML_OPEN  "<EdgeData>"
 #define XML_ENTRY "<EdgeDataValue>"\
                   "<Topic>%s</Topic>"\
                   "<Handle>%u</Handle>"\
@@ -44,12 +44,30 @@ using namespace std;
 static int readFromStream(char* buffer, int max_size_buffer, FCGX_Stream* stream);
 static uint32_t setResponseHeader(char* buffer, int max_len_buffer, int response_status_code);
 static vector<string> parseXML(const string& text, string tag);
+static void edgedata_logger(const char* info);
+static void edgedata_logger_format(const char* format, ...);
+static void edgedata_callback(T_EDGE_DATA* event);
 
 static pthread_mutex_t s_mutex;
+static pthread_mutex_t s_mutex_log;
+
 static bool s_connected = false;
 static vector<T_EDGE_DATA*> s_read_list, s_write_list;
-static vector<T_EDGE_DATA> event_list;
 
+struct T_EDGE_EVENT{
+public:
+   string                        topic;         /* value name    */
+   uint32_t                      handle;        /* value handle  */
+   E_EDGE_DATA_TYPE              type;          /* value type    */
+   uint32_t                      quality;       /* see EDGE_QUALITY_FLAG_ defines ... for details */
+   T_EDGE_DATA_VALUE             value;         /* value         */
+   int64_t                       timestamp64;   /* timestamp     */
+};
+
+
+static vector<T_EDGE_EVENT> event_list;
+
+static FILE* log_file_p = NULL;
 
 static void convert_str_to_value(E_EDGE_DATA_TYPE type, const char* in, T_EDGE_DATA* out)
 {
@@ -110,32 +128,32 @@ static void convert_quality_str_to_value(const char* in, T_EDGE_DATA* out)
    out->quality = quality;
 }
 
-static void convert_value_to_str(T_EDGE_DATA* in, char* out_value, char* out_type)
+static void convert_value_to_str(T_EDGE_DATA_VALUE* value, E_EDGE_DATA_TYPE type, char* out_value, char* out_type)
 {
-   switch (in->type)
+   switch (type)
    {
    case E_EDGE_DATA_TYPE_INT32:
-      sprintf(out_value, "%d", in->value.int32);
+      sprintf(out_value, "%d", value->int32);
       sprintf(out_type, "INT32");
       break;
    case E_EDGE_DATA_TYPE_UINT32:
-      sprintf(out_value, "%u", in->value.uint32);
+      sprintf(out_value, "%u", value->uint32);
       sprintf(out_type, "UINT32");
       break;
    case E_EDGE_DATA_TYPE_INT64:
-      sprintf(out_value, "%lld", in->value.int64);
+      sprintf(out_value, "%lld", value->int64);
       sprintf(out_type, "INT64");
       break;
    case E_EDGE_DATA_TYPE_UINT64:
-      sprintf(out_value, "%llu", in->value.uint64);
+      sprintf(out_value, "%llu", value->uint64);
       sprintf(out_type, "UINT64");
       break;
    case E_EDGE_DATA_TYPE_FLOAT32:
-      sprintf(out_value, "%f", in->value.float32);
+      sprintf(out_value, "%f", value->float32);
       sprintf(out_type, "FLOAT32");
       break;
    case E_EDGE_DATA_TYPE_DOUBLE64:
-      sprintf(out_value, "%lf", in->value.double64);
+      sprintf(out_value, "%lf", value->double64);
       sprintf(out_type, "DOUBLE64");
       break;
    case E_EDGE_DATA_TYPE_UNKNOWN:
@@ -203,7 +221,7 @@ vector<T_EDGE_DATA*> parseGetDataRequest(const string& text)
             if (EdgeDataEntryTag_Handle.size() != 1 && EdgeDataEntryTag_Value.size() != 1 && EdgeDataEntryTag_Quality.size() != 1 && EdgeDataEntryTag_Timestamp.size() != 1) 
             {
                parsed_values.clear();
-               printf("Error parse xml information from front end\n");
+               edgedata_logger_format("Error parse xml information from front end\n");
                break;
             }
             new_entry.handle = strtoul(EdgeDataEntryTag_Handle[0].c_str(), NULL, 10);
@@ -240,7 +258,7 @@ bool processSetDataRequest(const char* in, uint32_t in_len)
    vector<T_EDGE_DATA*> parsed_data = parseGetDataRequest(input);
    for (uint32_t i = 0; i < parsed_data.size(); i++) 
    {
-      printf("Handle detected: %u (new value: %u)\n", parsed_data[i]->handle, parsed_data[i]->value.uint32);
+      edgedata_logger_format("Handle detected: %u (new value: %u)\n", parsed_data[i]->handle, parsed_data[i]->value.uint32);
       /* enter critical section */
       pthread_mutex_lock(&s_mutex);
       for (int w = 0; w < s_write_list.size(); w++) 
@@ -251,7 +269,7 @@ bool processSetDataRequest(const char* in, uint32_t in_len)
             s_write_list[w]->timestamp64 = parsed_data[i]->timestamp64;
             s_write_list[w]->quality = parsed_data[i]->quality;
             edge_data_sync_write(&s_write_list[w]->handle, 1);
-            printf("sync write finish : new value %u\n", s_write_list[w]->value.uint32);
+            edgedata_logger_format("sync write finish : new value %u\n", s_write_list[w]->value.uint32);
          }
       }
       /* leave critical section */
@@ -274,13 +292,13 @@ uint32_t processGetDataRequest(char* out, uint32_t max_out_len)
    len = snprintf(out, max_out_len, XML_OPEN);
    for (int i = 0; i < s_read_list.size(); i++) 
    {
-      convert_value_to_str(s_read_list[i], value_str, type_str);
+      convert_value_to_str(&(s_read_list[i]->value), s_read_list[i]->type, value_str, type_str);
       convert_quality_to_str(s_read_list[i]->quality, quality_str);
       len += snprintf(&out[len], max_out_len - len, XML_ENTRY, s_read_list[i]->topic, s_read_list[i]->handle, "READ", type_str, value_str, quality_str, s_read_list[i]->timestamp64);
    }
    for (int i = 0; i < s_write_list.size(); i++) 
    {
-      convert_value_to_str(s_write_list[i], value_str, type_str);
+      convert_value_to_str(&(s_write_list[i]->value), s_write_list[i]->type, value_str, type_str);
       len += snprintf(&out[len], max_out_len - len, XML_ENTRY, s_write_list[i]->topic, s_write_list[i]->handle, "WRITE", type_str, value_str, ""/* quality field for write element empty */, s_write_list[i]->timestamp64);
    }
    if (s_connected)
@@ -310,10 +328,11 @@ uint32_t processGetEventsRequest(char* out, uint32_t max_out_len)
    len = snprintf(out, max_out_len, XML_OPEN);
    for (int i = 0; i < event_list.size(); i++) 
    {
-      convert_value_to_str(&event_list[i], value_str, type_str);
+      convert_value_to_str(&(event_list[i].value), event_list[i].type, value_str, type_str);
       convert_quality_to_str(event_list[i].quality, quality_str);
-      len += snprintf(&out[len], max_out_len - len, XML_ENTRY, event_list[i].topic, event_list[i].handle, "READ", type_str, value_str, quality_str, event_list[i].timestamp64);
+      len += snprintf(&out[len], max_out_len - len, XML_ENTRY, event_list[i].topic.c_str(), event_list[i].handle, "READ", type_str, value_str, quality_str, event_list[i].timestamp64);
    }
+
    if (s_connected)
    {
       len += snprintf(&out[len], max_out_len - len, XML_CLOSE, XML_STATUS_CONNECTED);
@@ -328,31 +347,74 @@ uint32_t processGetEventsRequest(char* out, uint32_t max_out_len)
    return len;
 }
 
-void edgedata_logger(const char* info) 
+static void open_log_file()
+{   
+   if (log_file_p!=NULL)
+   {
+      fclose(log_file_p);
+      log_file_p = NULL;
+   }
+   
+   /* remove last log file */
+   remove("/app/www/logfile_last.txt");
+   rename("/app/www/logfile.txt", "/app/www/logfile_last.txt");
+   log_file_p = fopen("/app/www/logfile.txt", "w+");
+}
+
+static void edgedata_logger(const char* info) 
 {
-   if (info != NULL) 
+   static uint32_t number_of_logged_lines=0;
+   pthread_mutex_lock(&s_mutex_log);
+
+   if (number_of_logged_lines > 10000)
+   {  /* reopen logfile */
+      open_log_file();
+      number_of_logged_lines = 0;
+   }
+   if ((info != NULL) && (log_file_p!= NULL))
    {
       printf("%s", info);
+      fputs(info, log_file_p);
+      fflush(log_file_p);      
    }
+   pthread_mutex_unlock(&s_mutex_log);
+
 }
 
-void edgedata_callback(T_EDGE_DATA* event) 
+static void edgedata_logger_format(const char* format, ...)
 {
+   va_list arg;
+   char buffer[400];
+
+   if (format == NULL)
+   {
+      return;
+   }
+   va_start(arg, format);
+   /* Build Log Info */
+   (void)vsnprintf(&buffer[0], sizeof(buffer) - 1, format, arg);
+   buffer[sizeof(buffer) - 1] = 0;
+   edgedata_logger(buffer);
+   va_end(arg);
+}
+
+static void edgedata_callback(T_EDGE_DATA* event) 
+{
+   pthread_mutex_lock(&s_mutex);
+   //edgedata_logger_format("Incomming event for topic: %s\n", event->topic);
    if (event_list.size() >= EVENTS_LENGTH) 
    {
-      delete event_list.begin()->topic;
       event_list.erase(event_list.begin());
    }
-   /* retain topics in case of disconnect */
-   event_list.push_back(*event);
-   char* topic = new char[strlen(event_list.back().topic)];
-   strcpy(topic, event_list.back().topic);
-   event_list.back().topic = topic;
+   T_EDGE_EVENT event_entry = {event->topic, event->handle, event->type, event->quality, event->value, event->timestamp64};
+   event_list.push_back(event_entry);
+   pthread_mutex_unlock(&s_mutex);
 }
 
-/* task for snychronize edge data */
+/* task for snychronize EdgeDataApi */
 void* edgedata_task(void* void_ptr) 
 {
+   sleep(1);
    edge_data_register_logger(edgedata_logger);
    while (1) 
    {
@@ -362,11 +424,12 @@ void* edgedata_task(void* void_ptr)
 
       if (edge_data_connect() != E_EDGE_DATA_RETVAL_OK) 
       {
-         printf("error connect\n");
+         edgedata_logger_format("Error during EdgeDataApi connection attempt\n");
          pthread_mutex_unlock(&s_mutex);
          sleep(1);
          continue;
       }
+      edgedata_logger_format("EdgeDataApi connected successfully\n");
 
       const T_EDGE_DATA_LIST* discover_info = edge_data_discover();
       for (int i = 0; i < discover_info->read_handle_list_len; i++) 
@@ -379,9 +442,13 @@ void* edgedata_task(void* void_ptr)
          s_write_list.push_back(edge_data_get_data(discover_info->write_handle_list[i]));
       }
       s_connected = true;
-
-      while (edge_data_sync_read(discover_info->read_handle_list, discover_info->read_handle_list_len) == E_EDGE_DATA_RETVAL_OK) 
+      
+      while (1) 
       {
+         if (edge_data_sync_read(discover_info->read_handle_list, discover_info->read_handle_list_len) != E_EDGE_DATA_RETVAL_OK)
+         {
+            break;
+         }
          /* update data every second */
          pthread_mutex_unlock(&s_mutex);
          usleep(1000000);
@@ -405,23 +472,32 @@ int main(int argc, char** argv)
    FCGX_Request cgi;
    memset(&cgi, 0, sizeof(FCGX_Request));
    pthread_mutex_init(&s_mutex, NULL);
+   pthread_mutex_init(&s_mutex_log, NULL);
 
    pthread_t edgedata_thread_nr;
    int ret;
+   
+   open_log_file();
+   
+   if (!log_file_p) 
+   {
+      printf("Cant write log into file\n");
+      return -2;
+   }
 
    /* create a thread which executes edgedata_task */
    if (pthread_create(&edgedata_thread_nr, NULL, edgedata_task, &ret)) 
    {
-      printf("Error creating thread\n");
+      edgedata_logger_format("Error creating thread\n");
       return 1;
    }
 
-   printf("Start Server\n");
+   edgedata_logger_format("Start Server\n");
    /* Init fast cgi */
    int err = FCGX_Init();
    if (err) 
    {
-      printf("FCGX_Init failed: %d\n", err);
+      edgedata_logger_format("FCGX_Init failed: %d\n", err);
       return -1;
    }
 
@@ -430,16 +506,16 @@ int main(int argc, char** argv)
    err = FCGX_InitRequest(&cgi, sock_fd, 0);
    if (err) 
    {
-      printf("FCGX_InitRequest failed: %d\n", err);
+      edgedata_logger_format("FCGX_InitRequest failed: %d\n", err);
       return -2;
    }
-   printf("Wait for Requests\n");
+   edgedata_logger_format("Wait for Requests\n");
    while (1) 
    {
       err = FCGX_Accept_r(&cgi);
       if (err) 
       {
-         printf("FCGX_Accept_r stopped: %d\n", err);
+         edgedata_logger_format("FCGX_Accept_r stopped: %d\n", err);
          break;
       }
 
@@ -449,18 +525,17 @@ int main(int argc, char** argv)
       request_length = FCGX_GetParam("CONTENT_LENGTH", cgi.envp);
       if ((request_method == NULL) || (request_uri == NULL) || (request_length == NULL)) 
       {
-         printf("Missing param (null)\n");
+         edgedata_logger_format("Missing param (null)\n");
       }
       else if (strncmp("POST", request_method, 5) == 0)
       {
-         //printf("Request Method: POST, Request URI: %s\n", request_uri);
          (void)memset(in_buffer, 0, sizeof(in_buffer));
          if (readFromStream(in_buffer, sizeof(in_buffer) - 1, cgi.in) >= 0) 
          {
             in_buffer[sizeof(in_buffer) - 1] = '\0';
             if (in_buffer[0] != '\0') 
             {
-               printf("Payload: %s\n", in_buffer);
+               edgedata_logger_format("Payload: %s\n", in_buffer);
             }
             if (strncmp(request_uri, "/edgedata/set", 100) == 0)
             {
@@ -497,15 +572,13 @@ int main(int argc, char** argv)
       }
       else if (strncmp("GET", request_method, 4) == 0) 
       {
-         //printf("Request Method: GET, Request URI: %s\n", request_uri);
          setResponseHeader(out_buffer, sizeof(out_buffer), 500);
       }
       else 
       {
-         printf("Error unsupported Request Method\n");
+         edgedata_logger_format("Error unsupported Request Method\n");
          setResponseHeader(out_buffer, sizeof(out_buffer), 500);
       }
-      //printf("%s\n", out_buffer);
       FCGX_PutStr(out_buffer, strlen(out_buffer), cgi.out);
       FCGX_Finish_r(&cgi);
    }
@@ -531,7 +604,7 @@ static int readFromStream(char* buffer, int max_size_buffer, FCGX_Stream* stream
       }
       buffer[i] = c;
    }
-   printf("RECV Buffer to small\n");
+   edgedata_logger_format("RECV Buffer to small\n");
    return 0;
 }
 

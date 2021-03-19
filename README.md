@@ -78,7 +78,7 @@ Open your Windows PowerShell and navigate into the repository, then run the foll
 
 Two demo projects (`DemoProject` and `DemoSshd`) have been provided within this repository to demonstrate the usage of the SIAPP SDK and the EdgeDataApi.
 
-`DemoProject` starts a websever on port 8080 which provides access to all configured signals to the SIAPP.
+`DemoProject` starts a websever on port 80 which provides access to all configured signals to the SIAPP.
 
 `.\build.bat DemoProject`
 
@@ -119,7 +119,7 @@ e.g. `.\run.bat DemoProject`
 The emulation of the `DemoProject` webserver can be reached via http://127.0.0.1:MAPPED_PORT. The MAPPED_PORT is printed out after the start of the emulation.
 ```
 ...
-8080/tcp -> 0.0.0.0:32778
+80/tcp -> 0.0.0.0:32778
 run.bat - Successfully simulated \demoproject-0.0.1.siapp
 ```
 

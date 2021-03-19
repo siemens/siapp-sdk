@@ -44,7 +44,7 @@ if not "%1" == "" (
    shift
    goto :optionalArgumentsLoop
 )
-
+   
 @FOR /F %%s IN ('%powershell_cmd% -command "(get-item env:'projectName').Value.ToLower().replace(' ','')"') DO @set projectName=%%s
 
 set buildDirectoryPath=%OUTPUT_DIRECTORY%\%projectName%-%version%
@@ -57,8 +57,14 @@ md "%buildDirectoryPath%\tmp\meta-inf.pmf"
 md "%buildDirectoryPath%\tmp\siapp"
 md "%buildDirectoryPath%\tmp\out"
 
-
 call :cleanup
+
+call :createParamFile
+if %ERRORLEVEL% NEQ 0 (
+   echo %me% - Error: Could not add parameter schema! Aborting... 1>&2
+   call :cleanup
+   exit /b %ERRORLEVEL%
+)
 
 call :createRootfs
 if %ERRORLEVEL% NEQ 0 (
@@ -69,9 +75,9 @@ if %ERRORLEVEL% NEQ 0 (
 
 call :createOCIFile
 if %ERRORLEVEL% NEQ 0 (
-   echo %me% - Error: Could not create OCI file! Aborting... 1>&2
-   call :cleanup
-   exit /b %ERRORLEVEL%
+  echo %me% - Error: Could not create OCI file! Aborting... 1>&2
+  call :cleanup
+  exit /b %ERRORLEVEL%
 )
 
 call :createMetaInfoFile
@@ -120,14 +126,14 @@ exit /b 0
       echo %me% - Error: Could not create docker container! 1>&2
       exit /b %ERRORLEVEL%
    )
-   
+
    docker export --output="%buildDirectoryPath%\tmp\siapp\rootfs.tar" %projectName%-arm32v7
    if %ERRORLEVEL% NEQ 0 (
       echo %me% - Error: Could not export root filesystem out of docker container! 1>&2
       call :cleanup
       exit /b %ERRORLEVEL%
    )
-   
+
    @FOR /F %%s IN ('%powershell_cmd% -command "(Get-Item '%buildDirectoryPath%\tmp\siapp\rootfs.tar').length"') DO @set rootfs_size=%%s
    
    if %rootfs_size% LEQ 0 (
@@ -190,6 +196,14 @@ exit /b 0
       call :cleanup
       exit /b %ERRORLEVEL%
    )
+   if exist "%buildDirectoryPath%\tmp\cmd" (
+	   tar -czf %buildDirectoryPath%\tmp\out\cmd.tar.gz -C %buildDirectoryPath%\tmp\cmd *
+	   if %ERRORLEVEL% NEQ 0 (
+         echo %me% - Error: Unable to pack parameter schema! 1>&2
+         call :cleanup
+         exit /b %ERRORLEVEL%
+	   )
+   )
    tar -cf %buildDirectoryPath%\%projectName%-%version%.siapp -C %buildDirectoryPath%\tmp\out *
    if %ERRORLEVEL% NEQ 0 (
       echo %me% - Error: Unable to pack Siapp! 1>&2
@@ -205,6 +219,13 @@ exit /b 0
       exit /b %ERRORLEVEL%
    )
    set /a "siapp_size_mb=(%siapp_size%/1024/1024)+1"
+   exit /b 0
+
+:createParamFile
+   if exist "%projectDirectoryPath%\cmd" (
+      md "%buildDirectoryPath%\tmp\cmd"
+      xcopy "%projectDirectoryPath%\cmd" "%buildDirectoryPath%\tmp\cmd" /s /e > nul
+   )
    exit /b 0
 
 :cleanup
