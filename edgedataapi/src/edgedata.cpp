@@ -317,6 +317,7 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_server_listen(const char* channel_name, const
 
    if (listen_socket < 0)
    {
+      edgedata_data_cleanup(&fd);
       ERROR_LOG("Error create unix socket\n");
       return NULL;
    }
@@ -330,6 +331,7 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_server_listen(const char* channel_name, const
    if (bind(listen_socket, (struct sockaddr*) & addr, sizeof(addr)) < 0)
    {
       close(listen_socket);
+      edgedata_data_cleanup(&fd);
       ERROR_LOG("Error bind unix socket %s\n", addr.sun_path);
       return NULL;
    }
@@ -352,6 +354,7 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_server_listen(const char* channel_name, const
    close(listen_socket);
    if (fd->write_fd <= 0)
    {
+      edgedata_data_cleanup(&fd);
       ERROR_LOG("Error accept unix socket\n");
       return NULL;
    }
@@ -383,6 +386,7 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_client_connect(const char* channel_name)
 
    if (fd->write_fd < 0)
    {
+      edgedata_data_cleanup(&fd);
       ERROR_LOG("Error create unix socket\n");
       return NULL;
    }
@@ -394,6 +398,7 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_client_connect(const char* channel_name)
    if (connect(fd->read_fd, (struct sockaddr*) & addr, sizeof(addr)) == -1)
    {
       close(fd->read_fd);
+      edgedata_data_cleanup(&fd);
       ERROR_LOG("Error connect unix socket\n");
       return NULL;
    }
