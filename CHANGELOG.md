@@ -5,10 +5,20 @@ This is a summary of the most important changes of SIAPP SDK.
 
 SIAPP SDK Releases
 ----------------
+ - [SIAPP SDK 1.2.0](#siapp-sdk-120) [os indepentend python scripts]
  - [SIAPP SDK 1.1.2](#siapp-sdk-112) 
  - [SIAPP SDK 1.1.1](#siapp-sdk-111) 
  - [SIAPP SDK 1.1.0](#siapp-sdk-110) [first public released version on github]
  - [SIAPP SDK 1.0.0](#siapp-sdk-100) [not offical released]
+
+-----------
+
+### SIAPP SDK 1.2.0
+
+**Improvements**
+*  OS indepentend python scripts
+*  SIAPP engineering over SICAM Device Manager via configuration files
+*  build.bat and run.bat files removed
 
 -----------
 
