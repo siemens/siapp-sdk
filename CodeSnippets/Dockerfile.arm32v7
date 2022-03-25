@@ -60,4 +60,4 @@ RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /
 #enable for a smaller release without compiler
 RUN apk del g++
 
-CMD ["/sbin/init"]
+ENTRYPOINT ["/sbin/init"]

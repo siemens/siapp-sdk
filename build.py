@@ -31,6 +31,10 @@ def _errorhandler(str):
     exit(-1)
 
 
+def _warning(str):
+    print(f"WARN: {str}")
+
+
 def _max_rootfs_size_in_mb():
     return 350
 
@@ -138,18 +142,26 @@ def _create_oci_file(project_path, build_dir, container_name):
 
     if container_json.get('Config', False):
         config_obj = container_json['Config']
-
         if config_obj.get('Entrypoint', False):
-            config_json['process']['args'].extend(config_obj['Entrypoint'])
+            if config_obj['Entrypoint']:
+                if isinstance(config_obj['Entrypoint'], list):
+                    config_json['process']['args'].extend(config_obj['Entrypoint'])
         if config_obj.get('Cmd', False):
-            config_json['process']['args'].append(config_obj['Cmd'])
+            if isinstance(config_obj['Cmd'], list):
+                config_json['process']['args'].extend(config_obj['Cmd'])
+            else:
+                config_json['process']['args'].append(config_obj['Cmd'])
         if config_obj.get('Env', False):
             config_json['process']['env'] = config_obj['Env']
         if config_obj.get('WorkingDir', False):
             config_json['process']['cwd'] = config_obj['WorkingDir']
+        print(config_json['process']['args'])
 
-    if not config_json['process']['args']:
-        config_json['process']['args'].append('/bin/sh')
+    if len(config_json['process']['args']) == 0:
+        _errorhandler("Could not find ENTRYPOINT OR CMD in Dockerfile")
+
+    if len(config_json['process']['args']) == 1 and config_json['process']['args'][0] == "/bin/sh":
+        _warning(f"Could not find a valid ENTRYPOINT or CMD option in Dockerfile")
 
     with open(temp_config_file, 'w') as f:
         json.dump(config_json, f, indent=4)
@@ -209,13 +221,13 @@ def _print_result(siapp_size, rootfs_size, siapp):
     name = os.path.basename(__file__)
 
     print(f"{name} - ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print(f"{name} - Size of unzipped root file system:                          {_byte_to_mb(rootfs_size)}MB")
+    print(f"{name} - Size of unzipped root file system:                  {_byte_to_mb(rootfs_size):>8} MB")
 
     if _byte_to_mb(rootfs_size) > _max_rootfs_size_in_mb():
-        print(f"{name} - Warning max. supported root file system size of {_max_rootfs_size_in_mb()}MB is reached")
+        print(f"{name} - Warning max. supported root file system size of {_max_rootfs_size_in_mb():>8} MB is reached")
 
-    print(f"{name} - Recommended configured siapp slot size:                    {_recomented_siapp_slot_size_in_mb(siapp_size)}MB")
-    print(f"{name} - Size of generated siapp installation file:                 {_byte_to_mb(siapp_size)}MB")
+    print(f"{name} - Recommended configured siapp slot size:             {_recomented_siapp_slot_size_in_mb(rootfs_size):>8} MB")
+    print(f"{name} - Size of generated siapp installation file:          {_byte_to_mb(siapp_size):>8} MB")
     print(f"{name} - ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print(f"{name} - Successfully generated {siapp}")
 
