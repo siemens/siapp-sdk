@@ -275,7 +275,8 @@ if __name__ == "__main__":
 
     if arglen > 1:
         dir = sys.argv[1]
-        name = sys.argv[1].lower().replace(' ', '')
+        dir_name = pathlib.Path(dir).resolve().name
+        name = dir_name.lower().replace(' ', '')
         version = _default_version()
 
         for i, additional_argument in enumerate(sys.argv):
