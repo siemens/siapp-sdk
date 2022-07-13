@@ -21,6 +21,8 @@ export const constApiA8000 = {
 	urlFileWrite: '/write_file',
 	urlFileImport: '/import_file',
 	urlFileExport: '/export_file',
+	urlZIPImport: '/import_zip',
+	urlZIPExport: '/export_zip',
 	urlFileDir: '/list_dir_json',
 	urlFileMkDir: '/mkdir',
 	urlFileDel: '/delete',

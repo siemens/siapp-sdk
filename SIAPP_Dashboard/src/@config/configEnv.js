@@ -15,7 +15,7 @@ const prodConfig = {
 	reduxLogger: false,
 	updateData: 60, // seconds
 	expireTimeout: 10, // minutes
-	version: '0.8.1',
+	version: '1.0.0',
 };
 
 const devConfig = {
@@ -25,7 +25,7 @@ const devConfig = {
 	reduxLogger: false,
 	updateData: 60, // seconds
 	expireTimeout: 10, // minutes
-	version: '0.8.1.DEV',
+	version: '1.0.0.DEV',
 };
 
 const config = process.env.NODE_ENV === 'production' ? prodConfig : devConfig;

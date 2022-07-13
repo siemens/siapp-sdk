@@ -40,6 +40,28 @@ export const fileDownload = (folder, filename) => async (dispatch, getState) => 
 	}
 };
 
+export const fileImportZIP = (folder, selectedFile) => async (dispatch, getState) => {
+	try {
+		await dispatch(serviceA8000.importA8000ZIP(folder, selectedFile));
+		toast.success(<Trans i18nKey='alert.successUpload'>"Upload successfully!"</Trans>, optionsToast);
+		return dispatch(fileList());
+	} catch (error) {
+		toast.error(<Trans i18nKey='alert.errorUpload'>"Upload failed!"</Trans>, optionsToast);
+		return;
+	}
+};
+
+export const fileExportZIP = (folder, filename) => async (dispatch, getState) => {
+	try {
+		await dispatch(serviceA8000.exportA8000ZIP(folder, filename));
+		toast.success(<Trans i18nKey='alert.successDownload'>"Download successfully!"</Trans>, optionsToast);
+		return;
+	} catch (error) {
+		toast.error(<Trans i18nKey='alert.errorDownload'>"Download failed!"</Trans>, optionsToast);
+		return;
+	}
+};
+
 export const fileList = () => async (dispatch, getState) => {
 	try {
 		const data = await dispatch(serviceA8000.dirA8000('./'));

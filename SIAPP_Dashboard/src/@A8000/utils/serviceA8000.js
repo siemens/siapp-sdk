@@ -244,6 +244,88 @@ class ServiceA8000 {
 		}
 	};
 
+	importA8000ZIP = (folder, selectedFile) => async (dispatch, getState) => {
+		const auth = getState().auth;
+
+		let configPost = {
+			method: 'POST',
+			headers: {
+				'siappMethod': 'set',
+				'Content-Type': 'text/plain',
+				'access_token': auth.accessToken,
+				'versionAPI': '1.0',
+			},
+			// timeout: 7000,
+		};
+
+		if (folder !== '') {
+			configPost = {
+				method: 'POST',
+				headers: {
+					'siappMethod': 'set',
+					'Content-Type': 'text/plain',
+					'access_token': auth.accessToken,
+					'versionAPI': '1.0',
+					'filename': folder,
+				},
+				// timeout: 7000,
+			};
+		}
+
+		try {
+			const response = await axios.post(configEnv.urlApi + constApiA8000.urlZIPImport, selectedFile, configPost);
+			return response.data;
+		} catch (error) {
+			dispatch(this.errorA8000(error));
+			throw error;
+		}
+	};
+
+	exportA8000ZIP = (folder, filename) => async (dispatch, getState) => {
+		const auth = getState().auth;
+		let configPost = {
+			method: 'POST',
+			headers: {
+				'siappMethod': 'get',
+				'Content-Type': 'text/plain',
+				'access_token': auth.accessToken,
+				'versionAPI': '1.0',
+			},
+			// timeout: 7000,
+			responseType: 'blob', // important
+		};
+
+		if (folder !== '') {
+			configPost = {
+				method: 'POST',
+				headers: {
+					'siappMethod': 'get',
+					'Content-Type': 'text/plain',
+					'access_token': auth.accessToken,
+					'versionAPI': '1.0',
+					'filename': folder,
+				},
+				// timeout: 7000,
+				responseType: 'blob', // important
+			};
+		}
+		const payload = {};
+
+		try {
+			const response = await axios.post(configEnv.urlApi + constApiA8000.urlZIPExport, payload, configPost);
+			const url = window.URL.createObjectURL(new Blob([response.data]));
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', filename);
+			document.body.appendChild(link);
+			link.click();
+			return true;
+		} catch (error) {
+			dispatch(this.errorA8000(error));
+			throw error;
+		}
+	};
+
 	dirA8000 = (folder) => async (dispatch, getState) => {
 		const auth = getState().auth;
 

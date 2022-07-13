@@ -14,15 +14,25 @@ import {useDispatch, useSelector} from 'react-redux';
 import {cloneDeep} from 'lodash-es';
 import Button from '@material-tailwind/react/Button';
 import {Tooltip} from '@mui/material';
-import {Upload as IconUpload, Download as IconDownload, Refresh as IconRefresh} from '@mui/icons-material';
+import {
+	Archive as IconArchive,
+	Unarchive as IconUnarchive,
+	Upload as IconUpload,
+	Download as IconDownload,
+	Refresh as IconRefresh,
+} from '@mui/icons-material';
 import ModalAddFolder from '../modal/ModalAddFolder';
 import ModalDelete from '../modal/ModalDelete';
+import {toast} from 'react-toastify';
+import {optionsToast} from '@A8000/components/layout/AlertMessage';
 import {fileList, fileDelete, fileDownload, fileUpload, fileMkDir} from '@A8000/store/A8000/fileSlice';
 import {Trans} from 'react-i18next';
+import {fileImportZIP, fileExportZIP} from '@A8000/store/A8000/fileSlice';
 
 function FileList(props) {
 	const dispatch = useDispatch();
 	const hiddenFileInput = useRef(null);
+	const hiddenFileImport = useRef(null);
 	const listDir = useSelector(({A8000}) => A8000.file);
 	const [folder, setFolder] = useState([]);
 
@@ -44,6 +54,23 @@ function FileList(props) {
 
 	const handleUpload = (event) => {
 		dispatch(fileUpload(folder.join(''), event.target.files[0]));
+	};
+
+	const handleImportButton = () => {
+		hiddenFileImport.current.click();
+	};
+
+	const handleImport = (event) => {
+		if (event.target.files[0].name.endsWith('.zip')) {
+			dispatch(fileImportZIP(folder.join(''), event.target.files[0]));
+		} else {
+			toast.error(<Trans i18nKey='alert.errorWebUpload'>"Only '*.zip' !"</Trans>, optionsToast);
+			event.target.value = null;
+		}
+	};
+
+	const handleExportButton = () => {
+		dispatch(fileExportZIP(folder.join(''), 'myPersistData.zip'));
 	};
 
 	function handleRemove(id) {
@@ -117,6 +144,35 @@ function FileList(props) {
 									</Button>
 								</Tooltip>
 								<input type='file' hidden ref={hiddenFileInput} onChange={handleUpload} />
+								<Tooltip title={<Trans i18nKey='uppercase.export'>EXPORT</Trans>}>
+									<Button
+										type='file'
+										onClick={handleExportButton}
+										color='orange'
+										buttonType='link'
+										size='sm'
+										rounded={false}
+										block={true}
+										iconOnly
+										ripple='dark'>
+										<IconArchive />
+									</Button>
+								</Tooltip>
+								<Tooltip title={<Trans i18nKey='uppercase.import'>IMPORT</Trans>}>
+									<Button
+										type='file'
+										onClick={handleImportButton}
+										color='brown'
+										buttonType='link'
+										size='sm'
+										rounded={false}
+										block={true}
+										iconOnly
+										ripple='dark'>
+										<IconUnarchive />
+									</Button>
+								</Tooltip>
+								<input type='file' hidden ref={hiddenFileImport} onChange={handleImport} />
 								<Tooltip title={<Trans i18nKey='uppercase.refresh'>REFRESH</Trans>}>
 									<Button
 										onClick={(e) => dispatch(fileList())}

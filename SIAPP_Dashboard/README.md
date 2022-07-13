@@ -7,8 +7,8 @@ date: 02.05.2022
 
 # SIAPP Dashboard
 
-`Version 0.7.2`
-`Date 02.05.2022`
+`Version 1.0.0`
+`Date 12.07.2022`
 
 ## Description
 
@@ -22,7 +22,12 @@ You can either use the prebuild version (build directory) or adapt the template 
 
 ## History
 
-0.8.0
+1.0.0
+
+- updated open source
+- import/export persist_data
+
+  0.8.0
 
 - mqttSim instead of ocppSim
 - add path in FileExplorer

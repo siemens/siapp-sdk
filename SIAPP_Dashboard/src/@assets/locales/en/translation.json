@@ -14,9 +14,11 @@
 		"delete": "DELETE",
 		"download": "DOWNLOAD",
 		"edit": "EDIT",
+		"export": "EXPORT",
 		"fileExplorer": "FILE EXPLORER",
 		"graph": "GRAPH",
 		"hour": "HOUR",
+		"import": "IMPORT",
 		"key": "KEY",
 		"language": "LANGUAGE",
 		"login": "LOGIN",
@@ -52,6 +54,8 @@
 	"text": {
 		"defaultPeriod": "DEFAULT PERIOD",
 		"delete": "Do you realy want to delete this?",
+		"exportPersistData": "EXPORT PERSIST DATA",
+		"importPersistData": "IMPORT PERSIST DATA",
 		"keepValues": "Keep Values",
 		"showPassword": "Show Password",
 		"updateData": "Update Data (s)"

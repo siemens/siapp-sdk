@@ -155,7 +155,6 @@ def _create_oci_file(project_path, build_dir, container_name):
             config_json['process']['env'] = config_obj['Env']
         if config_obj.get('WorkingDir', False):
             config_json['process']['cwd'] = config_obj['WorkingDir']
-        print(config_json['process']['args'])
 
     if len(config_json['process']['args']) == 0:
         _errorhandler("Could not find ENTRYPOINT OR CMD in Dockerfile")
@@ -163,7 +162,7 @@ def _create_oci_file(project_path, build_dir, container_name):
     if len(config_json['process']['args']) == 1 and config_json['process']['args'][0] == "/bin/sh":
         _warning(f"Could not find a valid ENTRYPOINT or CMD option in Dockerfile")
 
-    with open(temp_config_file, 'w') as f:
+    with open(temp_config_file, 'w', newline='\r\n') as f:
         json.dump(config_json, f, indent=4)
 
 
@@ -185,7 +184,7 @@ def _create_meta_info_file(build_dir, name, container_name, version, size):
     # pim_pid += 'ies_pkgbuildtime=\"' + date.strftime("%d.%m.%Y  %H:%M") + '\"\n'
     pim_pid += 'ies_pkgbuildtime=' + date.strftime("%d.%m.%Y  %H:%M")+ '\n'
 
-    with open(pim_pid_file, 'w') as f:
+    with open(pim_pid_file, 'w', newline='\r\n') as f:
         f.write(pim_pid)
 
 
@@ -275,7 +274,8 @@ if __name__ == "__main__":
 
     if arglen > 1:
         dir = sys.argv[1]
-        name = sys.argv[1].lower().replace(' ', '')
+        dir_name = pathlib.Path(dir).resolve().name
+        name = dir_name.lower().replace(' ', '')
         version = _default_version()
 
         for i, additional_argument in enumerate(sys.argv):

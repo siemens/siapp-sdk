@@ -79,7 +79,7 @@ function WidgetStation(props) {
 					</div>
 				</div>
 				<div className='flex flex-wrap justify-start flex-row'>
-					<h3 className='text-white text-lg'>{props.dataConfig.meta.templateDisplayName}</h3>
+					<h3 className='text-white text-lg'>{props.dataConfig.meta.displayName}</h3>
 				</div>
 			</CardHeader>
 			<CardBody>

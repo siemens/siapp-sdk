@@ -13,18 +13,20 @@ import {memo, useRef} from 'react';
 import {useDispatch} from 'react-redux';
 import Button from '@material-tailwind/react/Button';
 import {Tooltip} from '@mui/material';
-import {Upload as IconUpload} from '@mui/icons-material';
+import {Upload as IconUpload, Download as IconDownload} from '@mui/icons-material';
 import {toast} from 'react-toastify';
 import {optionsToast} from '@A8000/components/layout/AlertMessage';
 import {fileUpload} from '@A8000/store/A8000/fileSlice';
 import {Trans} from 'react-i18next';
+import {fileImportZIP} from '@A8000/store/A8000/fileSlice';
+import {fileExportZIP} from '@A8000/store/A8000/fileSlice';
 
 function FileImport(props) {
 	const dispatch = useDispatch();
-	const hiddenFileInput = useRef(null);
+	const hiddenFileWeb = useRef(null);
 
-	const handleUploadButton = () => {
-		hiddenFileInput.current.click();
+	const handleUploadWebButton = () => {
+		hiddenFileWeb.current.click();
 	};
 
 	const handleUploadWeb = (event) => {
@@ -36,13 +38,32 @@ function FileImport(props) {
 		}
 	};
 
+	const hiddenFileImport = useRef(null);
+
+	const handleUploadImportButton = () => {
+		hiddenFileImport.current.click();
+	};
+
+	const handleUploadImport = (event) => {
+		if (event.target.files[0].name.endsWith('.zip')) {
+			dispatch(fileImportZIP('', event.target.files[0]));
+		} else {
+			toast.error(<Trans i18nKey='alert.errorWebUpload'>"Only '*.zip' !"</Trans>, optionsToast);
+			event.target.value = null;
+		}
+	};
+
+	const handleUploadExportButton = () => {
+		dispatch(fileExportZIP('', 'myPersistData.zip'));
+	};
+
 	return (
 		<div className='overflow-x-auto mb-5'>
-			<div className='flex justify-start'>
+			<div className='flex justify-start mb-5'>
 				<Tooltip title={<Trans i18nKey='uppercase.upload'>UPLOAD</Trans>}>
 					<Button
 						type='file'
-						onClick={handleUploadButton}
+						onClick={handleUploadWebButton}
 						color='blue'
 						buttonType='outline'
 						size='sm'
@@ -54,7 +75,42 @@ function FileImport(props) {
 						<IconUpload />
 					</Button>
 				</Tooltip>
-				<input type='file' hidden ref={hiddenFileInput} accept='.tar' onChange={handleUploadWeb} />
+				<input type='file' hidden ref={hiddenFileWeb} accept='.tar' onChange={handleUploadWeb} />
+			</div>
+			<div className='flex justify-start mb-5'>
+				<Tooltip title={<Trans i18nKey='uppercase.export'>EXPORT</Trans>}>
+					<Button
+						type='file'
+						onClick={handleUploadExportButton}
+						color='blue'
+						buttonType='outline'
+						size='sm'
+						rounded={false}
+						block={true}
+						iconOnly={false}
+						ripple='dark'>
+						<Trans i18nKey='text.exportPersistData'>EXPORT PERSIST DATA</Trans>
+						<IconDownload />
+					</Button>
+				</Tooltip>
+			</div>
+			<div className='flex justify-start mb-5'>
+				<Tooltip title={<Trans i18nKey='uppercase.import'>IMPORT</Trans>}>
+					<Button
+						type='file'
+						onClick={handleUploadImportButton}
+						color='blue'
+						buttonType='outline'
+						size='sm'
+						rounded={false}
+						block={true}
+						iconOnly={false}
+						ripple='dark'>
+						<Trans i18nKey='text.importPersistData'>IMPORT PERSIST DATA</Trans>
+						<IconUpload />
+					</Button>
+				</Tooltip>
+				<input type='file' hidden ref={hiddenFileImport} accept='.zip' onChange={handleUploadImport} />
 			</div>
 		</div>
 	);

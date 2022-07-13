@@ -14,9 +14,11 @@
 		"delete": "LÖSCHEN",
 		"download": "HERUNTERLADEN",
 		"edit": "BEARBEITEN",
+		"export": "EXPORT",
 		"fileExplorer": "DATEIMANAGER",
 		"graph": "GRAPH",
 		"hour": "STUNDE",
+		"import": "IMPORT",
 		"key": "PARAMETER",
 		"language": "SPRACHE",
 		"login": "ANMELDEN",
@@ -52,6 +54,8 @@
 	"text": {
 		"defaultPeriod": "STANDARDPERIODE",
 		"delete": "Willst du das wirklich löschen?",
+		"exportPersistData": "EXPORT PERSIST DATA",
+		"importPersistData": "IMPORT PERSIST DATA",
 		"keepValues": "Werte beibehalten",
 		"showPassword": "Passwort anzeigen",
 		"updateData": "Aktualisierung Daten (s)"
