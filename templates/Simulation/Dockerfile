@@ -12,4 +12,6 @@ RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -o /
 COPY discover.csv /
 COPY events.csv /
 
+RUN chmod +x /EdgeDataSim.elf
+
 ENTRYPOINT ["./EdgeDataSim.elf", "discover.csv", "events.csv"]

@@ -49,6 +49,7 @@ static void edgedata_logger_format(const char* format, ...);
 static void edgedata_callback(T_EDGE_DATA* event);
 
 static pthread_mutex_t s_mutex;
+static pthread_mutex_t s_mutex_event;
 static pthread_mutex_t s_mutex_log;
 
 static bool s_connected = false;
@@ -322,7 +323,7 @@ uint32_t processGetEventsRequest(char* out, uint32_t max_out_len)
    char quality_str[50];
 
    /* enter critical section */
-   pthread_mutex_lock(&s_mutex);
+   pthread_mutex_lock(&s_mutex_event);
 
    uint32_t len;
    len = snprintf(out, max_out_len, XML_OPEN);
@@ -342,7 +343,7 @@ uint32_t processGetEventsRequest(char* out, uint32_t max_out_len)
       len += snprintf(&out[len], max_out_len - len, XML_CLOSE, XML_STATUS_DISCONNECTED);
    }
    /* leave critical section */
-   pthread_mutex_unlock(&s_mutex);
+   pthread_mutex_unlock(&s_mutex_event);
 
    return len;
 }
@@ -400,7 +401,7 @@ static void edgedata_logger_format(const char* format, ...)
 
 static void edgedata_callback(T_EDGE_DATA* event) 
 {
-   pthread_mutex_lock(&s_mutex);
+   pthread_mutex_lock(&s_mutex_event);
    //edgedata_logger_format("Incomming event for topic: %s\n", event->topic);
    if (event_list.size() >= EVENTS_LENGTH) 
    {
@@ -408,7 +409,7 @@ static void edgedata_callback(T_EDGE_DATA* event)
    }
    T_EDGE_EVENT event_entry = {event->topic, event->handle, event->type, event->quality, event->value, event->timestamp64};
    event_list.push_back(event_entry);
-   pthread_mutex_unlock(&s_mutex);
+   pthread_mutex_unlock(&s_mutex_event);
 }
 
 /* task for snychronize EdgeDataApi */
@@ -472,6 +473,7 @@ int main(int argc, char** argv)
    FCGX_Request cgi;
    memset(&cgi, 0, sizeof(FCGX_Request));
    pthread_mutex_init(&s_mutex, NULL);
+   pthread_mutex_init(&s_mutex_event, NULL);
    pthread_mutex_init(&s_mutex_log, NULL);
 
    pthread_t edgedata_thread_nr;

@@ -56,6 +56,7 @@ RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /
 RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /src -o /subscribe /src/subscribe.c /src/helper.c /edgedataapi/src/edgedata.cpp
 RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /src -o /discover /src/discover.c /src/helper.c /edgedataapi/src/edgedata.cpp
 
+RUN chmod +x /hellosiapp /simple_dido /subscribe /discover
 
 #enable for a smaller release without compiler
 RUN apk del g++

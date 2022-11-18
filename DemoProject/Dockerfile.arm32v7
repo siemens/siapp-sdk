@@ -14,4 +14,6 @@ RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -o /
 #enable for a smaller release without compiler
 RUN apk del g++
 
-ENTRYPOINT ./app/startup.sh
+RUN chmod +x /app/startup.sh /demo
+
+ENTRYPOINT /app/startup.sh
