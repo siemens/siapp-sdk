@@ -5,6 +5,7 @@ This is a summary of the most important changes of SIAPP SDK.
 
 SIAPP SDK Releases
 ----------------
+ - [SIAPP SDK 1.2.6](#siapp-sdk-126)
  - [SIAPP SDK 1.2.5](#siapp-sdk-125)
  - [SIAPP SDK 1.2.4](#siapp-sdk-124)
  - [SIAPP SDK 1.2.3](#siapp-sdk-123)
@@ -15,6 +16,15 @@ SIAPP SDK Releases
  - [SIAPP SDK 1.1.1](#siapp-sdk-111) 
  - [SIAPP SDK 1.1.0](#siapp-sdk-110) [first public released version on github]
  - [SIAPP SDK 1.0.0](#siapp-sdk-100) [not offical released]
+
+
+-----------
+
+### SIAPP SDK 1.2.6
+
+**Improvements**
+*  Bugfix for EdgeDataApi simulation for Linux hosts
+*  Remove SIAPP Dashboard
 
 -----------
 

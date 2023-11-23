@@ -21,6 +21,10 @@ The [SIAPP SDK](https://github.com/siemens/siapp-sdk) is a platform software ind
 
 - Windows Professional 10 (version 1803 or later) or Linux
 - An up-to-date version of [Docker Desktop](https://www.docker.com/products/docker-desktop) (Windows) or [Docker](https://www.docker.com/) (Linux)
+- For Linux with edgedata simulation you need [QEMU](https://www.qemu.org/) <br>
+e.g. for Debian 12.2:<br>
+'sudo apt-get install qemu binfmt-support qemu-user-static' (Call once)<br>
+'docker run --rm --privileged multiarch/qemu-user-static --reset -p yes' (Call after each restart)
 - [Python3](https://www.python.org/)
 
 # Basics
