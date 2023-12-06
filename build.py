@@ -100,7 +100,7 @@ def _create_rootfs_container(src_dir, build_dir, container_name, version):
     if not os.path.exists(container_file):
         _errorhandler(f"File does not exist: {container_file}")
 
-    command_list = [_tool(), 'build', '-f', container_file, '-t', container_image, src_dir]
+    command_list = [_tool(), 'build', '--platform', 'linux/arm/v7', '-f', container_file, '-t', container_image, src_dir]
     if subprocess.call(command_list) != 0:
         _errorhandler("Could not build docker image!")
 
