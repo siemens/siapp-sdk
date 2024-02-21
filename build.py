@@ -135,7 +135,11 @@ def _create_oci_file(project_path, build_dir, container_name):
         with open(common_config_file, 'r') as f:
             config_json = json.load(f)
 
-    container_json = json.loads(subprocess.check_output([_tool(), 'inspect', container_name]))[0]
+    command_output = subprocess.check_output([_tool(), 'inspect', container_name])
+    output_str = command_output.decode('utf-8')
+    json_start_index = output_str.find('[')
+    json_data = output_str[json_start_index:]
+    container_json = json.loads(json_data)[0]
 
     config_json['process']['args'] = []
     config_json['root']['path'] = 'rootfs'
@@ -168,7 +172,12 @@ def _create_oci_file(project_path, build_dir, container_name):
 
 def _create_meta_info_file(build_dir, name, container_name, version, size):
     date = datetime.datetime.now()
-    container_json = json.loads(subprocess.check_output([_tool(), 'inspect', container_name]))[0]
+    command_output = subprocess.check_output([_tool(), 'inspect', container_name])
+    output_str = command_output.decode('utf-8')
+    json_start_index = output_str.find('[')
+    json_data = output_str[json_start_index:]
+    container_json = json.loads(json_data)[0]
+
     pim_pid_file = os.path.join(build_dir, 'tmp', 'meta-inf.pmf', 'pim.pid')
 
     pim_pid = f'ies_pkgname={name}\n'
