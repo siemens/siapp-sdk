@@ -5,6 +5,7 @@ This is a summary of the most important changes of SIAPP SDK.
 
 SIAPP SDK Releases
 ----------------
+ - [SIAPP SDK 1.2.8](#siapp-sdk-128)
  - [SIAPP SDK 1.2.7](#siapp-sdk-127)
  - [SIAPP SDK 1.2.6](#siapp-sdk-126)
  - [SIAPP SDK 1.2.5](#siapp-sdk-125)
@@ -18,12 +19,20 @@ SIAPP SDK Releases
  - [SIAPP SDK 1.1.0](#siapp-sdk-110) [first public released version on github]
  - [SIAPP SDK 1.0.0](#siapp-sdk-100) [not offical released]
 
+
+-----------
+
+### SIAPP SDK 1.2.8
+
+**Improvements**
+*  Add platform option to build command of build.py (Special thanks to stejspet)
+
 -----------
 
 ### SIAPP SDK 1.2.7
 
 **Improvements**
-*  Bugfix for JSON Decoding (Special thanks to lucasschramm1)
+*  Bugfix for JSON Decoding  (Special thanks to lucasschramm1)
 
 -----------
 
