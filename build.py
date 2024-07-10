@@ -11,55 +11,23 @@ Armin Tirala <armin.tirala@siemens.com>
 
 '''
 
-import sys
 import os
 import shutil
 import tarfile
 import json
 import subprocess
 import pathlib
+from time import sleep
 import uuid
 import datetime
 
-
-def _helper():
-    print('SYNOPSIS: build.py PROJECTPATH [--name NAME] [--version VERSION]')
-
-
-def _errorhandler(str):
-    print(f"ERROR: {str}")
-    exit(-1)
-
-
-def _warning(str):
-    print(f"WARN: {str}")
+from helper import (BuildArgs, Platform, error_handler, parse_arguments,
+                    run_subprocess, remove_container, warning,
+                    init_multiarch_qemu)
 
 
 def _max_rootfs_size_in_mb():
     return 350
-
-
-def _default_version():
-    return '0.0.1'
-
-
-def _arch_postfix():
-    return 'arm32v7'
-
-
-def _tool():
-    '''
-    The tool to build the container. Use docker or podman.
-    '''
-    return 'docker'
-
-
-def _containerfile():
-    return 'Dockerfile'
-
-
-def _remove_container(container):
-    subprocess.call([_tool(), 'rm', container], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
 def _copy_if_exists(src, dst):
@@ -68,51 +36,63 @@ def _copy_if_exists(src, dst):
 
 
 def _initialize_directory(dir):
-    if os.path.exists(dir):
-        shutil.rmtree(dir, ignore_errors=True)
+    tmp_dir = os.path.join(dir, 'tmp')
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir, ignore_errors=False)
 
         # required, because the rmtree subprocess may be too slow
-        while os.path.exists(dir):
+        while os.path.exists(tmp_dir):
+            print(f"Info: Waiting for directory {dir} to be deleted")
+            sleep(1)
             pass
 
-    os.makedirs(os.path.join(dir, 'tmp', 'meta-inf.pmf'))
-    os.makedirs(os.path.join(dir, 'tmp', 'siapp'))
-    os.makedirs(os.path.join(dir, 'tmp', 'out'))
+    os.makedirs(os.path.join(tmp_dir, 'meta-inf.pmf'))
+    os.makedirs(os.path.join(tmp_dir, 'siapp'))
+    os.makedirs(os.path.join(tmp_dir, 'out'))
 
 
 def _byte_to_mb(size):
     return int((size / 1024 / 1024) + 1)
 
 
-def _recomented_siapp_slot_size_in_mb(size):
+def _recommended_siapp_slot_size_in_mb(size):
     return int(((size / 7 / 1024 / 1024) * 10) + 31)
 
 
-def _create_rootfs_container(src_dir, build_dir, container_name, version):
+def _create_rootfs_container(src_dir, build_dir, container_name, version,
+                             platform: Platform):
     '''
     Creates  the rootfs container based on the container file.
     '''
 
-    container_file = os.path.join(src_dir, f"{_containerfile()}.{_arch_postfix()}")
+    container_file = os.path.join(src_dir, "Dockerfile")
     container_image = f"{container_name}-{version}"
     tar_file = os.path.join(build_dir, 'tmp', 'siapp', 'rootfs.tar')
 
     if not os.path.exists(container_file):
-        _errorhandler(f"File does not exist: {container_file}")
+        error_handler(f"File does not exist: {container_file}")
 
-    command_list = [_tool(), 'build', '--platform', 'linux/arm/v7', '-f', container_file, '-t', container_image, src_dir]
-    if subprocess.call(command_list) != 0:
-        _errorhandler("Could not build docker image!")
+    command_list = [BuildArgs.tool, 'build', '--platform',
+                    platform.image,
+                    '-f', container_file, '-t', container_image, src_dir]
+    result = run_subprocess(command_list)
+    if result.returncode != 0:
+        error_handler("Could not build docker image!")
 
-    command_list = [_tool(), 'create', '--name', container_name, '--platform', 'linux/arm/v7', container_image]
-    if subprocess.call(command_list) != 0:
-        _remove_container(container_name)
-
-    command_list = [_tool(), 'export', '--output=' + tar_file, container_name]
-    if subprocess.call(command_list) != 0:
-        _remove_container(container_name)
-        _errorhandler("Could not export root filesystem out of docker container!")
-
+    command_list = [BuildArgs.tool, 'create', '--name', container_name,
+                    '--platform',  platform.image,
+                    container_image]
+    result = run_subprocess(command_list)
+    if result.returncode != 0:
+        remove_container(container_name, True)
+        error_handler("Could not create docker container!")
+    command_list = [BuildArgs.tool, 'export', '--output=' + tar_file,
+                    container_name]
+    result = run_subprocess(command_list)
+    if result.returncode != 0:
+        remove_container(container_name, True)
+        error_handler("Could not export root filesystem out of "
+                      "docker container!")
     file_size = os.path.getsize(tar_file)
 
     return file_size
@@ -120,11 +100,12 @@ def _create_rootfs_container(src_dir, build_dir, container_name, version):
 
 def _create_oci_file(project_path, build_dir, container_name):
     '''
-    Creates the config.json file. If the file does not exist in the project directory,
-    use the template file.
+    Creates the config.json file. If the file does not exist in the project,
+    directory use the template file.
     '''
     config_file = os.path.join(project_path, 'config.json')
-    common_config_file = os.path.join(pathlib.Path(__file__).parent.resolve(), 'templates', 'config.json')
+    common_config_file = os.path.join(pathlib.Path(__file__).parent.resolve(),
+                                      'templates', 'config.json')
     temp_config_file = os.path.join(build_dir, 'tmp', 'siapp', 'config.json')
 
     if os.path.exists(config_file):
@@ -135,7 +116,8 @@ def _create_oci_file(project_path, build_dir, container_name):
         with open(common_config_file, 'r') as f:
             config_json = json.load(f)
 
-    command_output = subprocess.check_output([_tool(), 'inspect', container_name])
+    command_output = subprocess.check_output([BuildArgs.tool, 'inspect',
+                                              container_name])
     output_str = command_output.decode('utf-8')
     json_start_index = output_str.find('[')
     json_data = output_str[json_start_index:]
@@ -149,7 +131,11 @@ def _create_oci_file(project_path, build_dir, container_name):
         if config_obj.get('Entrypoint', False):
             if config_obj['Entrypoint']:
                 if isinstance(config_obj['Entrypoint'], list):
-                    config_json['process']['args'].extend(config_obj['Entrypoint'])
+                    config_json['process']['args'].extend(
+                        config_obj['Entrypoint'])
+                else:
+                    config_json['process']['args'].append(
+                        config_obj['Entrypoint'])
         if config_obj.get('Cmd', False):
             if isinstance(config_obj['Cmd'], list):
                 config_json['process']['args'].extend(config_obj['Cmd'])
@@ -161,18 +147,20 @@ def _create_oci_file(project_path, build_dir, container_name):
             config_json['process']['cwd'] = config_obj['WorkingDir']
 
     if len(config_json['process']['args']) == 0:
-        _errorhandler("Could not find ENTRYPOINT OR CMD in Dockerfile")
+        error_handler("Could not find ENTRYPOINT OR CMD in Dockerfile")
 
     if len(config_json['process']['args']) == 1 and config_json['process']['args'][0] == "/bin/sh":
-        _warning(f"Could not find a valid ENTRYPOINT or CMD option in Dockerfile")
+        warning(f"Could not find a valid ENTRYPOINT or CMD option in Dockerfile")
 
     with open(temp_config_file, 'w', newline='\r\n') as f:
         json.dump(config_json, f, indent=4)
 
 
-def _create_meta_info_file(build_dir, name, container_name, version, size):
+def _create_meta_info_file(
+        build_dir, container_name, size, platform: Platform):
     date = datetime.datetime.now()
-    command_output = subprocess.check_output([_tool(), 'inspect', container_name])
+    command_output = subprocess.check_output([BuildArgs.tool, 'inspect',
+                                              container_name])
     output_str = command_output.decode('utf-8')
     json_start_index = output_str.find('[')
     json_data = output_str[json_start_index:]
@@ -180,11 +168,11 @@ def _create_meta_info_file(build_dir, name, container_name, version, size):
 
     pim_pid_file = os.path.join(build_dir, 'tmp', 'meta-inf.pmf', 'pim.pid')
 
-    pim_pid = f'ies_pkgname={name}\n'
+    pim_pid = f'ies_pkgname={BuildArgs.name}\n'
     pim_pid += f'ies_pkgid={uuid.uuid4()}\n'
-    pim_pid += f'ies_pkgrev={version}\n'
+    pim_pid += f'ies_pkgrev={BuildArgs.version}\n'
     pim_pid += f'ies_pkgtype=SIAPP\n'
-    pim_pid += f'ies_pkgarch=armv7\n'
+    pim_pid += f'ies_pkgarch={platform.arch}\n'
     pim_pid += f'ies_pkgrootfs_size_mb={_byte_to_mb(size)}\n'
     pim_pid += f'ies_pkgcontainerid={container_json["Id"]}\n'
     pim_pid += f'ies_pkgimageid={container_json["Image"]}\n'
@@ -234,66 +222,57 @@ def _print_result(siapp_size, rootfs_size, siapp):
     if _byte_to_mb(rootfs_size) > _max_rootfs_size_in_mb():
         print(f"{name} - Warning max. supported root file system size of {_max_rootfs_size_in_mb():>8} MB is reached")
 
-    print(f"{name} - Recommended configured siapp slot size:             {_recomented_siapp_slot_size_in_mb(rootfs_size):>8} MB")
+    print(f"{name} - Recommended configured siapp slot size:             {_recommended_siapp_slot_size_in_mb(rootfs_size):>8} MB")
     print(f"{name} - Size of generated siapp installation file:          {_byte_to_mb(siapp_size):>8} MB")
     print(f"{name} - ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     print(f"{name} - Successfully generated {siapp}")
 
 
-def main(dir, name, version):
-    container_name = name + '-' + _arch_postfix()
-    container_file = f"{_containerfile()}.{_arch_postfix()}"
+def generate_container(platform: Platform):
+    container_name = BuildArgs.name + '-' + platform.name
+    container_file = "Dockerfile"
 
     # look for the container file relative to this script file or use the current working dir
-    if os.path.exists(os.path.join(pathlib.Path(__file__).parent.resolve(), dir, container_file)):
+    if os.path.exists(os.path.join(pathlib.Path(__file__).parent.resolve(),
+                                   BuildArgs.dir, container_file)):
         root_path = pathlib.Path(__file__).parent.resolve()
-    elif os.path.exists(os.path.join(os.getcwd(), dir, container_file)):
+    elif os.path.exists(os.path.join(os.getcwd(), BuildArgs.dir, container_file)):
         root_path = os.getcwd()
     else:
-        _errorhandler(f"File does not exist: {container_file}")
+        error_handler(f"File does not exist: {container_file}")
 
-    project_path = os.path.normpath(os.path.join(root_path, dir))
-    build_path = os.path.join(root_path, 'build', name + '-' + version)
+    project_path = os.path.normpath(os.path.join(root_path, BuildArgs.dir))
+    build_path = os.path.join(root_path, 'build', BuildArgs.name + '-' + BuildArgs.version)
 
     _initialize_directory(build_path)
-    _remove_container(container_name)
+    remove_container(container_name, True)
 
     _copy_if_exists(os.path.join(project_path, 'cmd'), os.path.join(build_path, 'tmp', 'cmd'))
     _copy_if_exists(os.path.join(project_path, 'app-doc'), os.path.join(build_path, 'tmp', 'app-doc'))
 
-    rootfs_size = _create_rootfs_container(project_path, build_path, container_name, version)
+    rootfs_size = _create_rootfs_container(project_path,
+                                           build_path,
+                                           container_name,
+                                           BuildArgs.version,
+                                           platform)
     if rootfs_size <= 0:
-        _errorhandler("Could not read rootfs file size!")
+        error_handler("Could not read rootfs file size!")
 
     _create_oci_file(project_path, build_path, container_name)
-    _create_meta_info_file(build_path, name, container_name, version, rootfs_size)
+    _create_meta_info_file(build_path, container_name, rootfs_size, platform)
 
     siapp_size = _package_siapp(build_path, container_name)
     if siapp_size <= 0:
-        _errorhandler("Could not read siapp file size!")
+        error_handler("Could not read siapp file size!")
 
     shutil.rmtree(os.path.join(build_path, 'tmp'))
 
-    _print_result(siapp_size, rootfs_size, str(os.path.join(build_path, container_name)))
+    _print_result(siapp_size, rootfs_size,
+                  str(os.path.join(build_path, container_name)))
 
 
 if __name__ == "__main__":
-
-    arglen = len(sys.argv)
-
-    if arglen > 1:
-        dir = sys.argv[1]
-        dir_name = pathlib.Path(dir).resolve().name
-        name = dir_name.lower().replace(' ', '')
-        version = _default_version()
-
-        for i, additional_argument in enumerate(sys.argv):
-            if ("--name" in additional_argument or "-name" in additional_argument)and arglen > i:
-                name = sys.argv[i + 1].lower().replace(' ', '')
-            if ("--version" in additional_argument or "-version" in additional_argument) and arglen > i:
-                version = sys.argv[i + 1].lower().replace(' ', '')
-
-        main(dir, name, version)
-    else:
-        _helper()
-        _errorhandler("project directory path not specified!")
+    parse_arguments('build')
+    init_multiarch_qemu()
+    for platform in BuildArgs.platforms:
+        generate_container(platform)

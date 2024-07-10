@@ -1,12 +1,10 @@
-FROM arm32v7/alpine
+FROM alpine
 
 #ENV HTTP_PROXY "http://A.B.C.D:X"
 EXPOSE 22
 
-RUN apk add g++ lighttpd fcgi-dev fcgi++
+RUN apk add --no-cache libstdc++ libgcc g++
 
-# RUN command form:
-# https://github.com/dockage/alpine/blob/master/3.9/openrc/Dockerfile
 RUN echo '@edge http://dl-cdn.alpinelinux.org/alpine/edge/main' >> /etc/apk/repositories \
     && echo '@edgecommunity http://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories \
     && echo '@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing' >> /etc/apk/repositories \
@@ -36,7 +34,7 @@ RUN echo '@edge http://dl-cdn.alpinelinux.org/alpine/edge/main' >> /etc/apk/repo
     && sed -i 's/VSERVER/DOCKER/Ig' /lib/rc/sh/init.sh
 
 #set sshlogin to Port 22 with no password
-RUN apk add openssh \
+RUN apk add --no-cache openssh \
 	&& sed -i 's/#Port.*/Port 22/' /etc/ssh/sshd_config \
 	&&  sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config \
 	&&  sed -i 's/#PermitEmptyPasswords.*/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
@@ -48,4 +46,19 @@ RUN apk add openssh \
 # create own service:
 # https://github.com/OpenRC/openrc/blob/master/service-script-guide.md
 
-CMD ["/sbin/init"]
+
+
+COPY src /src
+COPY edgedataapi /edgedataapi
+
+RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -o /hellosiapp /src/hellosiapp.c /edgedataapi/src/edgedata.cpp
+RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /src -o /simple_dido /src/simple_dido.c /src/helper.c /edgedataapi/src/edgedata.cpp
+RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /src -o /subscribe /src/subscribe.c /src/helper.c /edgedataapi/src/edgedata.cpp
+RUN g++ -std=c++11 -Wcpp -Wno-psabi -I /usr/include -I /edgedataapi/include -I /src -o /discover /src/discover.c /src/helper.c /edgedataapi/src/edgedata.cpp
+
+RUN chmod +x /hellosiapp /simple_dido /subscribe /discover
+
+#enable for a smaller release without compiler
+RUN apk del g++
+
+ENTRYPOINT ["/sbin/init"]

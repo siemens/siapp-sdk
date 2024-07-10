@@ -1,8 +1,8 @@
-FROM arm32v7/alpine
+FROM alpine
 
 #ENV HTTP_PROXY "http://A.B.C.D:X"
 
-RUN apk add g++
+RUN apk add --no-cache g++
 
 COPY edgedataapi /edgedataapi
 COPY src /src

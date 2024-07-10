@@ -617,8 +617,8 @@ static int readFromStream(char* buffer, int max_size_buffer, FCGX_Stream* stream
 static vector<string> parseXML(const string& text, string tag)
 {
    vector<string> collection;
-   unsigned int pos = 0, begin_pos;
-
+   size_t pos = 0, begin_pos;
+ 
    while (1) 
    {
       begin_pos = text.find("<" + tag + ">", pos);
@@ -629,15 +629,16 @@ static vector<string> parseXML(const string& text, string tag)
       }
       /* skip tag characters '<' and '>' */
       begin_pos += tag.length() + 2;
-
+ 
       pos = text.find("</" + tag + ">", begin_pos);
-      if (begin_pos == string::npos) 
+      if (pos == string::npos) 
       {
          /* not found stop searching .... */
          break;
       }
       /* save the content of the tag into a list of contents */
       collection.push_back(text.substr(begin_pos, pos - begin_pos));
+      pos += tag.length() + 3;
    }
    return collection;
 }

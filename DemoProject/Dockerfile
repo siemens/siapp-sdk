@@ -1,9 +1,9 @@
-FROM arm32v7/alpine
+FROM alpine
 
 #ENV HTTP_PROXY "http://A.B.C.D:X"
 EXPOSE 80
 
-RUN apk add g++ lighttpd fcgi-dev fcgi++
+RUN apk add --no-cache g++ lighttpd fcgi-dev fcgi++
 
 COPY src /src
 COPY app /app
@@ -16,4 +16,4 @@ RUN apk del g++
 
 RUN chmod +x /app/startup.sh /demo
 
-ENTRYPOINT /app/startup.sh
+ENTRYPOINT ["/app/startup.sh"]
