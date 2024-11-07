@@ -47,7 +47,7 @@ This quick guideline goes into the build process of a SIAPP and its simulation. 
 
 # Building a SIAPP
 
-A SIAPP can be created by using the python3 script _build.py_. The _PROJECT_PATH_ must contain the container project and a Dockerfile named _Dockerfile_. By default all platform are build.
+A SIAPP can be created by using the python3 script _build.py_. The _PROJECT_PATH_ must contain the container project and a Dockerfile named _Dockerfile_. By default all platform are build. The default Container Tool is Podman.
 
 ```BASH
 python build.py PROJECT_PATH
@@ -68,7 +68,14 @@ Open a terminal window within your desired working directory and use `git clone`
 ```BASH
 cd <YOUR_WORKING_DIRECTORY>
 git clone https://github.com/siemens/siapp-sdk.git
-python siapp-sdk/build.py DemoProject
+python siapp-sdk/build.py DemoProject  # Podman
+```
+
+If you want to use Docker instead of Podman:
+```BASH
+cd <YOUR_WORKING_DIRECTORY>
+git clone https://github.com/siemens/siapp-sdk.git
+python siapp-sdk/build.py -t docker DemoProject  # Docker
 ```
 
 The **DemoProject** SIAPP will now be generated. This may take a few minutes. It contains a basic web server to provide access to a set of configured example signals to the SIAPP.
