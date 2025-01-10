@@ -148,6 +148,5 @@ Code Snippets
 [DemoPy/src/run.py](./DemoPy/src/run.py)
 
 **Helper to convert the C-based EDGEDATAAPI to Python via `ctypes`.**
-
 [DemoPy/src/edgedataapi.py](./DemoPy/src/edgedataapi)
 

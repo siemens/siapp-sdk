@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <cinttypes>
 #include <string.h>
 #include <alloca.h>
 #include <fcgiapp.h>
@@ -33,7 +34,7 @@
                   "<Type>%s</Type>"\
                   "<Value>%s</Value>"\
                   "<Quality>%s</Quality>"\
-                  "<Timestamp>%lld</Timestamp>"\
+                  "<Timestamp>%" PRIu64 "</Timestamp>"\
                   "</EdgeDataValue>"
 #define XML_CLOSE "<Status>%s</Status></EdgeData>"
 
@@ -142,11 +143,11 @@ static void convert_value_to_str(T_EDGE_DATA_VALUE* value, E_EDGE_DATA_TYPE type
       sprintf(out_type, "UINT32");
       break;
    case E_EDGE_DATA_TYPE_INT64:
-      sprintf(out_value, "%lld", value->int64);
+      sprintf(out_value, "%" PRId64, value->int64);
       sprintf(out_type, "INT64");
       break;
    case E_EDGE_DATA_TYPE_UINT64:
-      sprintf(out_value, "%llu", value->uint64);
+      sprintf(out_value, "%" PRIu64, value->uint64);
       sprintf(out_type, "UINT64");
       break;
    case E_EDGE_DATA_TYPE_FLOAT32:

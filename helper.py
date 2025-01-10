@@ -98,5 +98,14 @@ def parse_arguments(script: str):
 
 
 def init_multiarch_qemu():
-    run_subprocess([BuildArgs.tool, 'run', '--rm', '--privileged',
-                    'multiarch/qemu-user-static', '--reset', '-p', 'yes'])
+    try:
+        run_subprocess([BuildArgs.tool, 'run', '--rm', '--privileged',
+                        'multiarch/qemu-user-static', '--reset', '-p', 'yes'])
+    except FileNotFoundError:
+        if BuildArgs.tool == 'podman':
+            print('INFO: Podman is not installed. To use Docker instead, add the parameter \"-t docker\".'
+                  'Further information can be found in the README of https://github.com/siemens/siapp-sdk')
+        elif BuildArgs.tool == 'docker':
+            print('INFO: Docker is not installed. To use Podman instead, add the parameter \"-t podman\".'
+                  'Further information can be found in the README of https://github.com/siemens/siapp-sdk')
+        quit()

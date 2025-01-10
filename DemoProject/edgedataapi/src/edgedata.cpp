@@ -884,10 +884,10 @@ uint32_t edgedata_data_print_value(T_EDGE_DATA_VALUE* value, E_EDGE_DATA_TYPE ty
       pos = snprintf(value_as_text, max_len_value_as_string, "%u", value->uint32);
       break;
    case	E_EDGE_DATA_TYPE_INT64:
-      pos = snprintf(value_as_text, max_len_value_as_string, "%lld", value->int64);
+      pos = snprintf(value_as_text, max_len_value_as_string, "%" PRId64, value->int64);
       break;
    case	E_EDGE_DATA_TYPE_UINT64:
-      pos = snprintf(value_as_text, max_len_value_as_string, "%llu", value->uint64);
+      pos = snprintf(value_as_text, max_len_value_as_string, "%" PRIu64, value->uint64);
       break;
    case	E_EDGE_DATA_TYPE_FLOAT32:
       pos = snprintf(value_as_text, max_len_value_as_string, "%f", value->float32);

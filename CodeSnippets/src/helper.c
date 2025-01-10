@@ -72,10 +72,10 @@ uint32_t helper_get_value_text (T_EDGE_DATA *edge_data, char *value_as_text, uin
          pos = snprintf (value_as_text, max_len_value_as_string, "%u", edge_data->value.uint32);
          break;
       case E_EDGE_DATA_TYPE_INT64:
-         pos = snprintf (value_as_text, max_len_value_as_string, "%lld", edge_data->value.int64);
+         pos = snprintf (value_as_text, max_len_value_as_string, "%" PRId64, edge_data->value.int64);
          break;
       case E_EDGE_DATA_TYPE_UINT64:
-         pos = snprintf (value_as_text, max_len_value_as_string, "%llu", edge_data->value.uint64);
+         pos = snprintf (value_as_text, max_len_value_as_string, "%" PRIu64, edge_data->value.uint64);
          break;
       case E_EDGE_DATA_TYPE_FLOAT32:
          pos = snprintf (value_as_text, max_len_value_as_string, "%f", edge_data->value.float32);
@@ -201,7 +201,7 @@ bool helper_get_edgedata_text(T_EDGE_DATA *edge_data, char *edgedata_to_text, ui
    }
    else
    {
-      pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", UNIX-Timestamp (64Bit): %llu", edge_data->timestamp64);
+      pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", UNIX-Timestamp (64Bit): %" PRIu64, edge_data->timestamp64);
    }
    return true;
 }

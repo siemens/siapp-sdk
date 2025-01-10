@@ -5,6 +5,7 @@ This is a summary of the most important changes of SIAPP SDK.
 
 SIAPP SDK Releases
 ----------------
+ - [SIAPP SDK 2.1.1](#siapp-sdk-211)
  - [SIAPP SDK 2.1.0](#siapp-sdk-210)
  - [SIAPP SDK 2.0.0](#siapp-sdk-200)
  - [SIAPP SDK 1.2.8](#siapp-sdk-128)
@@ -21,6 +22,14 @@ SIAPP SDK Releases
  - [SIAPP SDK 1.1.0](#siapp-sdk-110) [first public released version on github]
  - [SIAPP SDK 1.0.0](#siapp-sdk-100) [not official released]
 
+
+-----------
+
+## SIAPP SDK 2.1.1
+
+### Features
+* Fix some compile warnings (also in EDGEDATAAPI)
+* Support latest alpine image with openrc
 
 -----------
 
@@ -44,7 +53,6 @@ SIAPP SDK Releases
 * Since more platforms are supported _Dockerfile.arm32v7_ is now only _Dockerfile_
 * Running the emulation requires now the platform (in this release either a8000 or sws)
 * For new interface options call `python build.py -h` or `python run.py -h`
-* By default, we use Podman and not Docker as a build tool. You can change this behavior with the `-t` flag.
 
 -----------
 

@@ -1,6 +1,5 @@
 FROM alpine
 
-#ENV HTTP_PROXY "http://A.B.C.D:X"
 EXPOSE 80
 
 RUN apk add --no-cache g++ lighttpd fcgi-dev fcgi++
@@ -16,4 +15,5 @@ RUN apk del g++
 
 RUN chmod +x /app/startup.sh /demo
 
+# Connect to demoproject webserver via webbrowser
 ENTRYPOINT ["/app/startup.sh"]

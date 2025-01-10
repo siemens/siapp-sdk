@@ -16,7 +16,7 @@
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <cinttypes>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
