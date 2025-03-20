@@ -131,7 +131,6 @@ def cb_edgedata_log(text):
 global edgecallbacks_instance
 edgecallbacks_instance = None
 
-
 class edgecallbacks():
     def __new__(cls):
         global edgecallbacks_instance
@@ -219,7 +218,7 @@ class edgedataapi:
         edgedataapi.discover_info = None
         retval = edgedataapi.__edge_data_connect__()
         edgecallbacks().cb_edge_data_logger("Try to connect to edgedataapi")
-        if retval is E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK:
+        if retval is not E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK.value[0]:
             edgecallbacks().cb_edge_data_logger(f"Error: Cant connect to edgedataapi: {retval}")
             return False
         edgecallbacks().cb_edge_data_logger("Connected to edgedataapi")
@@ -342,7 +341,7 @@ class edgedataapi:
 
     def sync_read():
         retval = edgedataapi.__edge_data_sync_read__(edgedataapi.discover_info.contents.read_handle_list, edgedataapi.discover_info.contents.read_handle_list_len)
-        if retval is E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK:
+        if retval is not E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK.value[0]:
             edgecallbacks().cb_edge_data_logger(f"Error: Cant sync read data: {retval}")
             return False
         edgecallbacks().cb_edge_data_logger("Readable data synchronized")
@@ -353,7 +352,7 @@ class edgedataapi:
         for i in range(len(edgedataapi.written_data_handle_list)):
             write_handles[i] = edgedataapi.written_data_handle_list[i]
         retval = edgedataapi.__edge_data_sync_write__(write_handles, len(edgedataapi.written_data_handle_list))
-        if retval is E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK:
+        if retval is not E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK.value[0]:
             edgecallbacks().cb_edge_data_logger(f"Error: Cant sync write data: {retval}")
             return False
         edgecallbacks().cb_edge_data_logger("Writeable data synchronized")
