@@ -5,7 +5,8 @@ This is a summary of the most important changes of SIAPP SDK.
 
 SIAPP SDK Releases
 ----------------
- - [SIAPP SDK 2.1.2](#siapp-sdk-213)
+ - [SIAPP SDK 2.1.4](#siapp-sdk-214)
+ - [SIAPP SDK 2.1.3](#siapp-sdk-213)
  - [SIAPP SDK 2.1.2](#siapp-sdk-212)
  - [SIAPP SDK 2.1.1](#siapp-sdk-211)
  - [SIAPP SDK 2.1.0](#siapp-sdk-210)
@@ -24,6 +25,13 @@ SIAPP SDK Releases
  - [SIAPP SDK 1.1.0](#siapp-sdk-110) [first public released version on github]
  - [SIAPP SDK 1.0.0](#siapp-sdk-100) [not official released]
 
+
+-----------
+
+## SIAPP SDK 2.1.4
+
+### Bug Fixes
+* Clean current sync write handle list after sync edgedataapi.py (Special thanks again to pgabert71)
 
 -----------
 

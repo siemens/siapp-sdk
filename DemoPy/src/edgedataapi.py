@@ -352,6 +352,7 @@ class edgedataapi:
         for i in range(len(edgedataapi.written_data_handle_list)):
             write_handles[i] = edgedataapi.written_data_handle_list[i]
         retval = edgedataapi.__edge_data_sync_write__(write_handles, len(edgedataapi.written_data_handle_list))
+        edgedataapi.written_data_handle_list = []
         if retval is not E_EDGE_DATA_RETVAL.E_EDGE_DATA_RETVAL_OK.value[0]:
             edgecallbacks().cb_edge_data_logger(f"Error: Cant sync write data: {retval}")
             return False
