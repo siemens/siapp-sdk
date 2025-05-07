@@ -255,8 +255,15 @@ class edgedataapi:
 
     def read(topic):
         try:
-            read_data = edgedataapi.__edge_data_get_data__(edgedataapi.__edge_data_get_readable_handle__(topic))
-            return data2dict(read_data)
+            handle = edgedataapi.__edge_data_get_readable_handle__(topic)
+            if (handle != 0):
+                read_data = edgedataapi.__edge_data_get_data__(handle)
+                return data2dict(read_data)
+            handle = edgedataapi.__edge_data_get_writeable_handle__(topic)
+            if (handle != 0):
+                read_data = edgedataapi.__edge_data_get_data__(handle)
+                return data2dict(read_data)
+            return None
         except Exception as e:
             edgecallbacks().cb_edge_data_logger(f"An error occurred: {e}")
             return None

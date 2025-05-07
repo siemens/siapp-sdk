@@ -62,6 +62,9 @@ if __name__ == "__main__":
             exit(-2)
 
         for topic in discover_info["write"]:
+            print(f"Manual Write Data: {edgedataapi.read(topic)}")
+
+        for topic in discover_info["write"]:
             if not edgedataapi.write(topic, value, ["FLAG_OVERFLOW", "TEST"], int(time.time_ns())):
                 print("Write failed")
             value = value + 1
