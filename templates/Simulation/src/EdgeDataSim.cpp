@@ -23,6 +23,8 @@
 #include <string>
 #include <map>
 #include <iterator>
+#include <sstream>
+#include <fstream>
 #include "csvparsing.h"
 #include "edgedata_internal.h"
 
@@ -58,6 +60,31 @@ static bool                               b_wait_for_discover = true;
 static bool                               b_connection_ok = false;
 static const char                         *CSV_File1_ptr = NULL;
 static const char                         *CSV_File2_ptr = NULL;
+
+/*!
+******************************************************************************
+DESCRIPTION:     Fast CSV header parsing without memory allocation
+*****************************************************************************/
+static vector<string> parse_csv_header_fast(const string& line) {
+   vector<string> fields;
+   fields.reserve(10); // Pre-allocate for typical CSV columns
+   
+   size_t start = 0;
+   size_t end = 0;
+   while ((end = line.find(';', start)) != string::npos) {
+      fields.emplace_back(line.substr(start, end - start));
+      start = end + 1;
+   }
+   // Add the last column, removing trailing whitespace
+   if (start < line.length()) {
+      string last_col = line.substr(start);
+      while (!last_col.empty() && (last_col.back() == '\n' || last_col.back() == '\r' || last_col.back() == ' ')) {
+         last_col.pop_back();
+      }
+      fields.emplace_back(last_col);
+   }
+   return fields;
+}
 
 /*!
 ******************************************************************************
@@ -156,7 +183,7 @@ E_EDGE_DATA_TYPE get_type_edge(const char* type_csv)
    {
       return E_EDGE_DATA_TYPE_DOUBLE64;
    }
-   log("Error: Invalid type \"%s\" found in \"s%\". (Allowed values: UINT32,INT32,INT64,UINT64,FLOAT32,DOUBLE64)\n", type_csv, CSV_File1_ptr);
+   log("Error: Invalid type \"%s\" found in \"%s\". (Allowed values: UINT32,INT32,INT64,UINT64,FLOAT32,DOUBLE64)\n", type_csv, CSV_File1_ptr);
    exit(-1);
 }
 
@@ -416,24 +443,9 @@ void Events_attribute_control()
    }
    string str;
    getline(data, str, '\n');
-   char delim[] = ";";
-   char* cstr = new char[str.length() + 1];
-   strcpy(cstr, str.c_str());
-   char* ptr = strtok(cstr, delim);
-   vector<string>vec;
-   while (ptr != NULL)
-   {
-      vec.push_back(ptr);
-      ptr = strtok(NULL, delim);
-   }
-   string last = vec.back();
-   if (last.back() == '\n' || last.back() == '\r')
-   {
-      vector<string>::iterator it1;
-      it1 = vec.end();
-      vec.erase(it1);
-      vec.push_back(last.substr(0, last.size() - 1));
-   }
+   
+   // Use fast CSV parsing
+   vector<string> vec = parse_csv_header_fast(str);
    for (unsigned int i = 0; i < vec.size(); i++)
    {
       if (vec.at(i) == DEFAULT_EVENTS_topic_Attribute || vec.at(i) == DEFAULT_EVENTS_value_Attribute ||
@@ -487,24 +499,9 @@ void Discover_attribute_control()
    }
    string str;
    getline(data, str, '\n');
-   char delim[] = ";";
-   char* cstr = new char[str.length() + 1];
-   strcpy(cstr, str.c_str());
-   char* ptr = strtok(cstr, delim);
-   vector<string>vec;
-   while (ptr != NULL)
-   {
-      vec.push_back(ptr);
-      ptr = strtok(NULL, delim);
-   }
-   string last = vec.back();
-   if (last.back() == '\n' || last.back() == '\r')
-   {
-      vector<string>::iterator it1;
-      it1 = vec.end();
-      vec.erase(it1);
-      vec.push_back(last.substr(0, last.size() - 1));
-   }
+   
+   // Use fast CSV parsing
+   vector<string> vec = parse_csv_header_fast(str);
 
    for (unsigned int i = 0; i < vec.size(); i++)
    {
@@ -589,7 +586,7 @@ struct not_digit
 
 static uint32_t goto_number()
 {
-   csvparsing csvevents("events.csv");
+   csvparsing csvevents(CSV_File2_ptr);
    map<string, string> row_events;
    vector <string> file_size;
    while (csvevents >> row_events)

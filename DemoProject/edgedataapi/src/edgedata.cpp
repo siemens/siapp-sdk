@@ -1280,7 +1280,7 @@ uint32_t edgedata_flatbuffers_edge_event_receive(void* fd, unsigned char* payloa
 /* static */ EDGEDATA_IPC_FD* edge_data_fd = NULL;
 static pthread_mutex_t edge_app_access_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-E_EDGE_DATA_RETVAL edge_data_connect()
+E_EDGE_DATA_RETVAL edge_data_connect_internal(bool auto_retry)
 {
    uint32_t number_of_discoverd_elements = 0;
    E_EDGE_DATA_RETVAL ret = E_EDGE_DATA_RETVAL_OK;
@@ -1342,6 +1342,13 @@ E_EDGE_DATA_RETVAL edge_data_connect()
    /* error->clean up */
    if (ret != E_EDGE_DATA_RETVAL_OK)
    {
+      if (auto_retry)
+      {  /* try once after reconnect but sleep 10 seconds */
+         ERROR_LOG("Opposite is maybe not ready, wait 10 Seconds\n");
+         sleep(10);
+         ERROR_LOG("Try to reconnect\n");
+         return edge_data_connect_internal(false);
+      }
       edge_data_disconnect();
    }
    INFO_LOG("SEND DISCOVER REQUEST finished\n");
@@ -1362,6 +1369,11 @@ E_EDGE_DATA_RETVAL edge_data_disconnect()
    LEAVE_ACCESS_APP();
    sleep(1);
    return E_EDGE_DATA_RETVAL_OK;
+}
+
+E_EDGE_DATA_RETVAL edge_data_connect()
+{
+   return edge_data_connect_internal(true);
 }
 
 const T_EDGE_DATA_LIST* edge_data_discover()
