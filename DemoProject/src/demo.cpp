@@ -130,72 +130,73 @@ static void convert_quality_str_to_value(const char* in, T_EDGE_DATA* out)
    out->quality = quality;
 }
 
-static void convert_value_to_str(T_EDGE_DATA_VALUE* value, E_EDGE_DATA_TYPE type, char* out_value, char* out_type)
+static void convert_value_to_str(T_EDGE_DATA_VALUE* value, E_EDGE_DATA_TYPE type, char* out_value, size_t out_value_len, char* out_type, size_t out_type_len)
 {
    switch (type)
    {
    case E_EDGE_DATA_TYPE_INT32:
-      sprintf(out_value, "%d", value->int32);
-      sprintf(out_type, "INT32");
+      snprintf(out_value, out_value_len, "%d", value->int32);
+      snprintf(out_type, out_type_len, "INT32");
       break;
    case E_EDGE_DATA_TYPE_UINT32:
-      sprintf(out_value, "%u", value->uint32);
-      sprintf(out_type, "UINT32");
+      snprintf(out_value, out_value_len, "%u", value->uint32);
+      snprintf(out_type, out_type_len, "UINT32");
       break;
    case E_EDGE_DATA_TYPE_INT64:
-      sprintf(out_value, "%" PRId64, value->int64);
-      sprintf(out_type, "INT64");
+      snprintf(out_value, out_value_len, "%" PRId64, value->int64);
+      snprintf(out_type, out_type_len, "INT64");
       break;
    case E_EDGE_DATA_TYPE_UINT64:
-      sprintf(out_value, "%" PRIu64, value->uint64);
-      sprintf(out_type, "UINT64");
+      snprintf(out_value, out_value_len, "%" PRIu64, value->uint64);
+      snprintf(out_type, out_type_len, "UINT64");
       break;
    case E_EDGE_DATA_TYPE_FLOAT32:
-      sprintf(out_value, "%f", value->float32);
-      sprintf(out_type, "FLOAT32");
+      snprintf(out_value, out_value_len, "%g", value->float32);
+      snprintf(out_type, out_type_len, "FLOAT32");
       break;
    case E_EDGE_DATA_TYPE_DOUBLE64:
-      sprintf(out_value, "%lf", value->double64);
-      sprintf(out_type, "DOUBLE64");
+      snprintf(out_value, out_value_len, "%g", value->double64);
+      snprintf(out_type, out_type_len, "DOUBLE64");
       break;
    case E_EDGE_DATA_TYPE_UNKNOWN:
    default:
-      sprintf(out_value, "%u", 0);
-      sprintf(out_type, "UNKNOWN");
+      snprintf(out_value, out_value_len, "%u", 0);
+      snprintf(out_type, out_type_len, "UNKNOWN");
       break;
    }
 }
 
-static void convert_quality_to_str(uint32_t quality, char* out)
+static void convert_quality_to_str(uint32_t quality, char* out, size_t out_len)
 {
-   strcpy(out, "");
-   if (quality & EDGE_QUALITY_FLAG_NOT_TOPICAL)
+   size_t pos = 0;
+   out[0] = '\0';
+   if ((quality & EDGE_QUALITY_FLAG_NOT_TOPICAL) && pos + 3 < out_len)
    {
-      strcat(out, "NT|");
+      pos += snprintf(&out[pos], out_len - pos, "NT|");
    }
-   if (quality & EDGE_QUALITY_FLAG_OVERFLOW)
+   if ((quality & EDGE_QUALITY_FLAG_OVERFLOW) && pos + 3 < out_len)
    {
-      strcat(out, "OV|");
+      pos += snprintf(&out[pos], out_len - pos, "OV|");
    }
-   if (quality & EDGE_QUALITY_FLAG_OPERATOR_BLOCKED)
+   if ((quality & EDGE_QUALITY_FLAG_OPERATOR_BLOCKED) && pos + 3 < out_len)
    {
-      strcat(out, "OB|");
+      pos += snprintf(&out[pos], out_len - pos, "OB|");
    }
-   if (quality & EDGE_QUALITY_FLAG_SUBSITUTED)
+   if ((quality & EDGE_QUALITY_FLAG_SUBSITUTED) && pos + 3 < out_len)
    {
-      strcat(out, "SB|");
+      pos += snprintf(&out[pos], out_len - pos, "SB|");
    }
-   if (quality & EDGE_QUALITY_FLAG_TEST) 
+   if ((quality & EDGE_QUALITY_FLAG_TEST) && pos + 2 < out_len)
    {
-      strcat(out, "T|");
+      pos += snprintf(&out[pos], out_len - pos, "T|");
    }
-   if (quality & EDGE_QUALITY_FLAG_INVALID) 
+   if ((quality & EDGE_QUALITY_FLAG_INVALID) && pos + 3 < out_len)
    {
-      strcat(out, "IV|");
+      pos += snprintf(&out[pos], out_len - pos, "IV|");
    }
-   if (strlen(out) > 0)
+   if (pos > 0)
    {  /* remove '|' at the end */
-      out[strlen(out) - 1] = '\0';
+      out[pos - 1] = '\0';
    }
 }
 
@@ -294,13 +295,13 @@ uint32_t processGetDataRequest(char* out, uint32_t max_out_len)
    len = snprintf(out, max_out_len, XML_OPEN);
    for (int i = 0; i < s_read_list.size(); i++) 
    {
-      convert_value_to_str(&(s_read_list[i]->value), s_read_list[i]->type, value_str, type_str);
-      convert_quality_to_str(s_read_list[i]->quality, quality_str);
+      convert_value_to_str(&(s_read_list[i]->value), s_read_list[i]->type, value_str, sizeof(value_str), type_str, sizeof(type_str));
+      convert_quality_to_str(s_read_list[i]->quality, quality_str, sizeof(quality_str));
       len += snprintf(&out[len], max_out_len - len, XML_ENTRY, s_read_list[i]->topic, s_read_list[i]->handle, "READ", type_str, value_str, quality_str, s_read_list[i]->timestamp64);
    }
    for (int i = 0; i < s_write_list.size(); i++) 
    {
-      convert_value_to_str(&(s_write_list[i]->value), s_write_list[i]->type, value_str, type_str);
+      convert_value_to_str(&(s_write_list[i]->value), s_write_list[i]->type, value_str, sizeof(value_str), type_str, sizeof(type_str));
       len += snprintf(&out[len], max_out_len - len, XML_ENTRY, s_write_list[i]->topic, s_write_list[i]->handle, "WRITE", type_str, value_str, ""/* quality field for write element empty */, s_write_list[i]->timestamp64);
    }
    if (s_connected)
@@ -330,8 +331,8 @@ uint32_t processGetEventsRequest(char* out, uint32_t max_out_len)
    len = snprintf(out, max_out_len, XML_OPEN);
    for (int i = 0; i < event_list.size(); i++) 
    {
-      convert_value_to_str(&(event_list[i].value), event_list[i].type, value_str, type_str);
-      convert_quality_to_str(event_list[i].quality, quality_str);
+      convert_value_to_str(&(event_list[i].value), event_list[i].type, value_str, sizeof(value_str), type_str, sizeof(type_str));
+      convert_quality_to_str(event_list[i].quality, quality_str, sizeof(quality_str));
       len += snprintf(&out[len], max_out_len - len, XML_ENTRY, event_list[i].topic.c_str(), event_list[i].handle, "READ", type_str, value_str, quality_str, event_list[i].timestamp64);
    }
 
@@ -467,9 +468,9 @@ void* edgedata_task(void* void_ptr)
 /* simple webserver (fastcgi interface)*/
 int main(int argc, char** argv) 
 {
-   char out_buffer[2000000];
+   static char out_buffer[2000000];
    uint32_t len = 0;
-   char in_buffer[50000];
+   static char in_buffer[50000];
    char* request_method, * request_uri, * request_length;
    FCGX_Request cgi;
    memset(&cgi, 0, sizeof(FCGX_Request));

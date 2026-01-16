@@ -9,7 +9,12 @@
  *
  */
 
+
 #include <helper.h>
+
+#ifndef MAX_TOPIC_LEN
+#define MAX_TOPIC_LEN 128
+#endif
 
 /*!
 ******************************************************************************
@@ -175,33 +180,68 @@ uint32_t helper_get_quality_text (T_EDGE_DATA *edge_data, char *quality_to_text,
 bool helper_get_edgedata_text(T_EDGE_DATA *edge_data, char *edgedata_to_text, uint32_t max_len_edgedata_to_text)
 {
    uint32_t pos = 0;
-   if ((edgedata_to_text == NULL) || (edge_data == NULL))
+   if ((edgedata_to_text == NULL) || (edge_data == NULL) || (max_len_edgedata_to_text == 0))
    {
       return false;
    }
-   /* Topic: */
-   pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,"Topic: %s", edge_data->topic);
-   
-   /* (Data)Type: */
-   pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", Type:");
-   pos += helper_get_data_type_text(edge_data, &edgedata_to_text[pos], (max_len_edgedata_to_text-pos));
-   
-   /* Quality: */
-   pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", Quality: ");
-   pos += helper_get_quality_text(edge_data, &edgedata_to_text[pos], (max_len_edgedata_to_text-pos));
 
-   /* Value: */
-   pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", Value: ");
-   pos += helper_get_value_text(edge_data, &edgedata_to_text[pos], (max_len_edgedata_to_text-pos));
-   
-   /* Timestamp */
+   char safe_topic[MAX_TOPIC_LEN + 1];
+   safe_topic[MAX_TOPIC_LEN] = '\0';
+   if (edge_data->topic) {
+      strncpy(safe_topic, edge_data->topic, MAX_TOPIC_LEN);
+      safe_topic[MAX_TOPIC_LEN] = '\0';
+   } else {
+      safe_topic[0] = '\0';
+   }
+
+   int n = snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos), "Topic: %s", safe_topic);
+   if (n < 0 || (uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
+   n = snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos), ", Type:");
+   if (n < 0 || (uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
+   n = helper_get_data_type_text(edge_data, &edgedata_to_text[pos], (max_len_edgedata_to_text-pos));
+   if ((uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
+   n = snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos), ", Quality: ");
+   if (n < 0 || (uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
+   n = helper_get_quality_text(edge_data, &edgedata_to_text[pos], (max_len_edgedata_to_text-pos));
+   if ((uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
+   n = snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos), ", Value: ");
+   if (n < 0 || (uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
+   n = helper_get_value_text(edge_data, &edgedata_to_text[pos], (max_len_edgedata_to_text-pos));
+   if ((uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+   pos += (uint32_t)n;
+   if (pos >= max_len_edgedata_to_text) return false;
+
    if (edge_data->timestamp64==0)
    {
-      pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", UNIX-Timestamp (64Bit): NOT SET");
+      n = snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos), ", UNIX-Timestamp (64Bit): NOT SET");
+      if (n < 0 || (uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+      pos += (uint32_t)n;
+      if (pos >= max_len_edgedata_to_text) return false;
    }
    else
    {
-      pos += (uint32_t)snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos) ,", UNIX-Timestamp (64Bit): %" PRIu64, edge_data->timestamp64);
+      n = snprintf(&edgedata_to_text[pos], (max_len_edgedata_to_text-pos), ", UNIX-Timestamp (64Bit): %" PRIu64, edge_data->timestamp64);
+      if (n < 0 || (uint32_t)n >= (max_len_edgedata_to_text-pos)) return false;
+      pos += (uint32_t)n;
+      if (pos >= max_len_edgedata_to_text) return false;
    }
    return true;
 }

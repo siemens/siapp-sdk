@@ -325,8 +325,31 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_server_listen(const char* channel_name, const
    struct sockaddr_un addr;
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_LOCAL;
-   strcpy(addr.sun_path, fd->read_channel_name.c_str());
-   unlink(fd->read_channel_name.c_str());
+   if (fd->read_channel_name.length() >= sizeof(addr.sun_path))
+   {
+      edgedata_data_cleanup(&fd);
+      ERROR_LOG("Error: channel name too long for unix socket path\n");
+      return NULL;
+   }
+   strncpy(addr.sun_path, fd->read_channel_name.c_str(), sizeof(addr.sun_path) - 1);
+   addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
+
+   /* Only unlink if path is a socket or does not exist */
+   struct stat st;
+   if (lstat(fd->read_channel_name.c_str(), &st) == 0)
+   {
+      if (S_ISSOCK(st.st_mode))
+      {
+         unlink(fd->read_channel_name.c_str());
+      }
+      else
+      {
+         close(listen_socket);
+         edgedata_data_cleanup(&fd);
+         ERROR_LOG("Error: path exists and is not a socket: %s\n", addr.sun_path);
+         return NULL;
+      }
+   }
 
    if (bind(listen_socket, (struct sockaddr*) & addr, sizeof(addr)) < 0)
    {
@@ -339,10 +362,12 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_server_listen(const char* channel_name, const
    /* we set permission here */
    if (user != NULL)
    {
-      (void)snprintf(cmd, sizeof(cmd), "chown %s %s", user, addr.sun_path);
-      (void)system(cmd);
-      (void)snprintf(cmd, sizeof(cmd), "chmod 777 %s", addr.sun_path);
-      (void)system(cmd);
+      struct passwd *pw = getpwnam(user);
+      if (pw != NULL)
+      {
+         (void)chown(addr.sun_path, pw->pw_uid, pw->pw_gid);
+      }
+      (void)chmod(addr.sun_path, 0777);
    }
 
    listen(listen_socket, 5);
@@ -393,7 +418,15 @@ EDGEDATA_IPC_FD* edgedata_ipc_unix_client_connect(const char* channel_name)
    struct sockaddr_un addr;
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_LOCAL;
-   strcpy(addr.sun_path, fd->read_channel_name.c_str());
+   if (fd->read_channel_name.length() >= sizeof(addr.sun_path))
+   {
+      close(fd->read_fd);
+      edgedata_data_cleanup(&fd);
+      ERROR_LOG("Error: channel name too long for unix socket path\n");
+      return NULL;
+   }
+   strncpy(addr.sun_path, fd->read_channel_name.c_str(), sizeof(addr.sun_path) - 1);
+   addr.sun_path[sizeof(addr.sun_path) - 1] = '\0';
 
    if (connect(fd->read_fd, (struct sockaddr*) & addr, sizeof(addr)) == -1)
    {

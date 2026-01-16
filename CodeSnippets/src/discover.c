@@ -84,6 +84,13 @@ int main()
 
       /* get write data access pointer by write */
       T_EDGE_DATA** p_write_data_list = (T_EDGE_DATA**)malloc(list->write_handle_list_len * sizeof(T_EDGE_DATA*));
+      if (p_write_data_list == NULL && list->write_handle_list_len > 0)
+      {
+         printf("Discover - malloc failed for write list\n");
+         edge_data_disconnect();
+         sleep(1);
+         continue;
+      }
       for (uint32_t i = 0; i < list->write_handle_list_len; i++)
       {
          p_write_data_list[i] = edge_data_get_data(list->write_handle_list[i]);
@@ -91,6 +98,14 @@ int main()
       }
       /* get read data access pointer by read handle */
       T_EDGE_DATA** p_read_data_list = (T_EDGE_DATA**)malloc(list->read_handle_list_len * sizeof(T_EDGE_DATA*));
+      if (p_read_data_list == NULL && list->read_handle_list_len > 0)
+      {
+         printf("Discover - malloc failed for read list\n");
+         free(p_write_data_list);
+         edge_data_disconnect();
+         sleep(1);
+         continue;
+      }
       for (uint32_t i = 0; i < list->read_handle_list_len; i++)
       {
          p_read_data_list[i] = edge_data_get_data(list->read_handle_list[i]);

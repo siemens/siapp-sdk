@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+#include <pwd.h>
 //#include <arpa/inet.h>
 
 #define MSG_MAX_FULL_SIZE                 4096
