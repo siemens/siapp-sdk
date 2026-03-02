@@ -5,6 +5,7 @@ This is a summary of the most important changes of SIAPP SDK.
 
 SIAPP SDK Releases
 ----------------
+ - [SIAPP SDK 2.1.8](#siapp-sdk-218)
  - [SIAPP SDK 2.1.7](#siapp-sdk-217)
  - [SIAPP SDK 2.1.6](#siapp-sdk-216)
  - [SIAPP SDK 2.1.5](#siapp-sdk-215)
@@ -28,6 +29,13 @@ SIAPP SDK Releases
  - [SIAPP SDK 1.1.0](#siapp-sdk-110) [first public released version on github]
  - [SIAPP SDK 1.0.0](#siapp-sdk-100) [not official released]
 
+
+-----------
+
+## SIAPP SDK 2.1.8
+
+### Improvements
+* Demo SIAPPs now require setting SSH_PASSWORD in Dockerfile before building
 
 -----------
 
